@@ -444,7 +444,13 @@
         
         <!-- Post title -->
         <h1 class="blog-post-title">{{ post.title }}</h1>
-        
+        <!-- Author info -->
+        <div class="blog-post-author">
+             <div class="author-info">
+                <a href="#" class="author-name">{{ post.author.name if post.author else 'Sabir Ibrahim' }}</a>
+                <div class="post-date">{{ post.created_at.strftime('%B %d, %Y') }}</div>
+            </div>
+        </div>  
         <!-- Post subtitle/description -->
         <div class="blog-post-subtitle">
             {{ post.excerpt }}
@@ -460,13 +466,7 @@
     </div>
     {% endif %}
 
-        <!-- Author info -->
-        <div class="blog-post-author">
-             <div class="author-info">
-                <a href="#" class="author-name">{{ post.author.name if post.author else 'Sabir Ibrahim' }}</a>
-                <div class="post-date">{{ post.created_at.strftime('%B %d, %Y') }}</div>
-            </div>
-        </div>    
+  
     
     <!-- Blog post content -->
     <article class="blog-post-content">
