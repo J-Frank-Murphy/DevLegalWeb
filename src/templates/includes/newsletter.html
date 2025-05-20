@@ -1,0 +1,14 @@
+<!-- Newsletter Section -->
+<section id="newsletter" class="newsletter">
+    <div class="container">
+        <h2>Stay Updated</h2>
+        <p>Subscribe to our newsletter for the latest updates on technology law and compliance.</p>
+        <form id="newsletter-form" action="{{ url_for('main.subscribe') }}" method="POST">
+            <div class="form-group">
+                <input type="email" name="email" placeholder="Your email address" required>
+                <button type="submit" class="submit-button">Subscribe</button>
+            </div>
+        </form>
+        <div id="newsletter-message"></div>
+    </div>
+</section>
