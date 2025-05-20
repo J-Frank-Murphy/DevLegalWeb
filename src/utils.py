@@ -11,7 +11,7 @@ def allowed_file(filename):
 def sanitize_html(html_content):
     """Sanitize HTML content to prevent XSS attacks"""
     # Add additional tags and attributes for rich text
-    allowed_tags = ALLOWED_TAGS + [
+    allowed_tags = list(ALLOWED_TAGS) + [
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 
         'p', 'br', 'hr', 'img', 'pre', 'code', 
         'blockquote', 'div', 'span', 'ul', 'ol', 
