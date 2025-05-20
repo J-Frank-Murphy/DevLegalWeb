@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
@@ -36,6 +36,28 @@ def save_image(file):
         return f'uploads/{unique_filename}'
     
     return None
+
+@admin_bp.route('/upload-image', methods=['POST'])
+@login_required
+def upload_image():
+    """Handle image uploads from TinyMCE editor"""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    if file and allowed_file(file.filename):
+        file_path = save_image(file)
+        if file_path:
+            # Return the URL for the uploaded image
+            return jsonify({
+                'location': url_for('static', filename=file_path)
+            })
+    
+    return jsonify({'error': 'Invalid file type'}), 400
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
