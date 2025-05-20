@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dev Legal - Technology Law Experts{% endblock %}</title>
+    <meta name="description" content="Dev Legal counsels clients on matters at the intersection of law and technology, including intellectual property, open source software, and data privacy.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css' ) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/navigation.css') }}">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Custom styles for centered header layout */
+        .header-container {
+            justify-content: space-between;
+            max-width: 1200px;
+            padding: 0 2rem;
+        }
+        
+        /* Hero section with image */
+        .hero .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .hero-content {
+            flex: 1;
+            max-width: 600px;
+        }
+        
+        .hero-image {
+            flex: 1;
+            position: relative;
+            max-width: 500px;
+            margin-left: 2rem;
+            text-align: right;
+        }
+        
+        .hero-image img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        
+        /* About section with attorney image */
+        .about-image img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+        }
+        
+        @media (max-width: 992px ) {
+            .hero .container {
+                flex-direction: column;
+            }
+            
+            .hero-image {
+                margin-left: 0;
+                margin-top: 2rem;
+                text-align: center;
+            }
+        }
+    </style>
+    
+    {% block additional_styles %}{% endblock %}
+</head>
+<body>
+    {% include 'includes/header.html' %}
+    
+    {% block content %}{% endblock %}
+    
+    {% include 'includes/newsletter.html' %}
+    
+    {% include 'includes/contact.html' %}
+    
+    {% include 'includes/footer.html' %}
+    
+    {% block additional_scripts %}{% endblock %}
+</body>
+</html>
