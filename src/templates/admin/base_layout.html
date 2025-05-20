@@ -22,7 +22,7 @@
             <nav class="sidebar-nav">
                 <ul>
                     <li>
-                        <a href="{{ url_for('admin.index') }}" {% if request.endpoint == 'admin.index' %}class="active"{% endif %}>
+                        <a href="{{ url_for('admin.dashboard') }}" {% if request.endpoint == 'admin.dashboard' %}class="active"{% endif %}>
                             <i class="fas fa-tachometer-alt"></i> Dashboard
                         </a>
                     </li>
