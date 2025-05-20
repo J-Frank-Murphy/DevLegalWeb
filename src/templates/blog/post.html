@@ -1,137 +1,557 @@
 {% extends "base.html" %}
 
 {% block title %}{{ post.title }} | Dev Legal Blog{% endblock %}
-{% block meta_description %}{{ post.excerpt }}{% endblock %}
 
-{% block header_title %}{{ post.title }}{% endblock %}
-{% block header_description %}{{ post.created_at.strftime('%B %d, %Y') }} • {{ post.reading_time }} min read{% endblock %}
+{% block additional_styles %}
+<style>
+    /* Blog post specific styles */
+    body {
+        background-color: #fff;
+        color: #333;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        line-height: 1.6;
+    }
+    
+    /* Content container */
+    .blog-post-container {
+        max-width: 700px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+    
+    /* Header section */
+    .blog-post-header {
+        margin: 3rem auto 2rem;
+        text-align: center;
+    }
+    
+    .blog-post-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 1rem;
+        color: #2c3e50;
+    }
+    
+    .blog-post-subtitle {
+        font-size: 1.25rem;
+        color: #555;
+        margin-bottom: 2rem;
+        line-height: 1.4;
+    }
+    
+    /* Author section */
+    .blog-post-author {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 2rem;
+    }
+    
+    .author-image {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 1rem;
+    }
+    
+    .author-info {
+        text-align: left;
+    }
+    
+    .author-name {
+        font-weight: 600;
+        color: #2c3e50;
+        text-decoration: none;
+        font-size: 1rem;
+    }
+    
+    .author-name:hover {
+        text-decoration: underline;
+    }
+    
+    .post-date {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+    }
+    
+    /* Social sharing */
+    .blog-post-social {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 2rem 0;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .social-actions {
+        display: flex;
+        align-items: center;
+    }
+    
+    .social-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #f5f7fa;
+        color: #7f8c8d;
+        margin-right: 1rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .social-button:hover {
+        background-color: #e0e6ed;
+        color: #2c3e50;
+    }
+    
+    .share-button {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background-color: #f5f7fa;
+        color: #2c3e50;
+        border-radius: 20px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+    
+    .share-button:hover {
+        background-color: #e0e6ed;
+    }
+    
+    .share-button i {
+        margin-right: 0.5rem;
+    }
+    
+    /* Featured image */
+    .blog-post-featured-image-container {
+        margin: 2rem 0;
+        position: relative;
+    }
+    
+    .blog-post-featured-image {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+        display: block;
+    }
+    
+    .image-caption {
+        margin-top: 0.5rem;
+        font-size: 0.85rem;
+        color: #7f8c8d;
+        text-align: center;
+    }
+    
+    .image-caption a {
+        color: #3498db;
+        text-decoration: none;
+    }
+    
+    .image-caption a:hover {
+        text-decoration: underline;
+    }
+    
+    /* Content styling */
+    .blog-post-content {
+        margin: 2rem 0;
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: #333;
+    }
+    
+    .blog-post-content p {
+        margin-bottom: 1.5rem;
+    }
+    
+    .blog-post-content h2 {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin: 2.5rem 0 1rem;
+        color: #2c3e50;
+    }
+    
+    .blog-post-content h3 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin: 2rem 0 1rem;
+        color: #2c3e50;
+    }
+    
+    .blog-post-content ul, .blog-post-content ol {
+        margin-bottom: 1.5rem;
+        padding-left: 2rem;
+    }
+    
+    .blog-post-content li {
+        margin-bottom: 0.75rem;
+    }
+    
+    .blog-post-content a {
+        color: #3498db;
+        text-decoration: none;
+    }
+    
+    .blog-post-content a:hover {
+        text-decoration: underline;
+    }
+    
+    .blog-post-content blockquote {
+        border-left: 4px solid #3498db;
+        padding: 0.5rem 0 0.5rem 1.5rem;
+        margin: 1.5rem 0;
+        color: #555;
+        font-style: italic;
+        background-color: #f9f9f9;
+    }
+    
+    .blog-post-content code {
+        background-color: #f5f7fa;
+        padding: 0.2rem 0.4rem;
+        border-radius: 4px;
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+        font-size: 0.9em;
+    }
+    
+    .blog-post-content pre {
+        background-color: #f5f7fa;
+        padding: 1rem;
+        border-radius: 4px;
+        overflow-x: auto;
+        margin-bottom: 1.5rem;
+    }
+    
+    .blog-post-content pre code {
+        background-color: transparent;
+        padding: 0;
+    }
+    
+    /* Tags */
+    .blog-post-tags {
+        display: flex;
+        flex-wrap: wrap;
+        margin: 2rem 0;
+    }
+    
+    .blog-post-tag {
+        display: inline-block;
+        background-color: #f5f7fa;
+        color: #7f8c8d;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.2s ease;
+    }
+    
+    .blog-post-tag:hover {
+        background-color: #3498db;
+        color: #fff;
+    }
+    
+    /* Category badge */
+    .category-badge {
+        display: inline-block;
+        background-color: #3498db;
+        color: white;
+        padding: 0.3rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-decoration: none;
+        margin-bottom: 1rem;
+    }
+    
+    .category-badge:hover {
+        background-color: #2980b9;
+    }
+    
+    /* Comments section */
+    .comments-section {
+        margin: 3rem 0;
+        padding-top: 2rem;
+        border-top: 1px solid #eee;
+    }
+    
+    .comments-section h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        color: #2c3e50;
+    }
+    
+    .comment {
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .comment-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+    }
+    
+    .comment-author {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    
+    .comment-date {
+        font-size: 0.9rem;
+        color: #7f8c8d;
+    }
+    
+    .comment-content {
+        color: #34495e;
+        line-height: 1.6;
+    }
+    
+    .comment-form {
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        padding: 1.5rem;
+    }
+    
+    .comment-form h4 {
+        font-size: 1.3rem;
+        margin-bottom: 1.5rem;
+        color: #2c3e50;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    
+    .form-group input, .form-group textarea {
+        width: 100%;
+        padding: 0.8rem;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: inherit;
+        font-size: inherit;
+    }
+    
+    .form-group textarea {
+        min-height: 150px;
+        resize: vertical;
+    }
+    
+    .submit-button {
+        background-color: #3498db;
+        color: #fff;
+        border: none;
+        padding: 0.8rem 1.5rem;
+        border-radius: 4px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    
+    .submit-button:hover {
+        background-color: #2980b9;
+    }
+    
+    /* Back to blog link */
+    .back-to-blog {
+        display: inline-flex;
+        align-items: center;
+        color: #3498db;
+        text-decoration: none;
+        font-weight: 600;
+        margin-bottom: 2rem;
+        transition: color 0.3s ease;
+    }
+    
+    .back-to-blog i {
+        margin-right: 0.5rem;
+    }
+    
+    .back-to-blog:hover {
+        color: #2980b9;
+    }
+    
+    /* Table of contents button */
+    .toc-button {
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: #3498db;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        z-index: 100;
+        transition: all 0.2s ease;
+    }
+    
+    .toc-button:hover {
+        background-color: #2980b9;
+        transform: scale(1.05);
+    }
+    
+    /* Responsive styles */
+    @media (max-width: 768px) {
+        .blog-post-title {
+            font-size: 2rem;
+        }
+        
+        .blog-post-subtitle {
+            font-size: 1.1rem;
+        }
+        
+        .blog-post-content {
+            font-size: 1rem;
+        }
+        
+        .toc-button {
+            bottom: 1rem;
+            right: 1rem;
+            width: 40px;
+            height: 40px;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<article class="single-post">
-    <div class="post-header">
-        <div class="post-meta">
-            <div class="post-author">
-                <img src="{{ url_for('static', filename='images/author.jpg') }}" alt="Author" class="author-avatar">
-                <span>Sabir Ibrahim</span>
-            </div>
-            <div class="post-date">{{ post.created_at.strftime('%B %d, %Y') }}</div>
-            <div class="post-category">
-                <a href="{{ url_for('blog.category', slug=post.category.slug) }}">{{ post.category.name }}</a>
-            </div>
+<div class="blog-post-container">
+    <!-- Back to blog link -->
+    <a href="{{ url_for('blog.index') }}" class="back-to-blog">
+        <i class="fas fa-arrow-left"></i> Back to Blog
+    </a>
+    
+    <!-- Blog Post Header -->
+    <header class="blog-post-header">
+        <!-- Category badge -->
+        <a href="{{ url_for('blog.category', slug=post.category.slug) }}" class="category-badge">
+            {{ post.category.name }}
+        </a>
+        
+        <!-- Post title -->
+        <h1 class="blog-post-title">{{ post.title }}</h1>
+        
+        <!-- Post subtitle/description -->
+        <div class="blog-post-subtitle">
+            There are three OSS-related scenarios in which companies must navigate legal risks: (1) using OSS, (2) contributing to OSS, and (3) creating OSS.
         </div>
         
-        {% if post.featured_image %}
-        <div class="post-featured-image">
-            <img src="{{ url_for('static', filename=post.featured_image) }}" alt="{{ post.title }}">
+        <!-- Author info -->
+        <div class="blog-post-author">
+            <img src="{{ url_for('static', filename='images/author.jpg') if post.author and post.author.image else 'images/default-author.jpg' }}" alt="Author" class="author-image">
+            <div class="author-info">
+                <a href="#" class="author-name">{{ post.author.name if post.author else 'Sabir Ibrahim' }}</a>
+                <div class="post-date">{{ post.created_at.strftime('%B %d, %Y') }}</div>
+            </div>
         </div>
-        {% endif %}
+    </header>
+    
+    <!-- Social sharing buttons -->
+    <div class="blog-post-social">
+        <div class="social-actions">
+            <a href="#" class="social-button" title="Like">
+                <i class="far fa-heart"></i>
+            </a>
+            <a href="#comments" class="social-button" title="Comments">
+                <i class="far fa-comment"></i>
+            </a>
+        </div>
+        <a href="#" class="share-button">
+            <i class="fas fa-share"></i> Share
+        </a>
     </div>
     
-    <div class="post-content">
-        {{ post.html_content|safe }}
+    <!-- Featured image with caption -->
+    {% if post.featured_image %}
+    <div class="blog-post-featured-image-container">
+        <img src="{{ url_for('static', filename=post.featured_image) }}" alt="{{ post.title }}" class="blog-post-featured-image">
+        <div class="image-caption">
+            Photo by <a href="#">Ilya Pavlov</a> on <a href="#">Unsplash</a>
+        </div>
     </div>
+    {% endif %}
     
+    <!-- Blog post content -->
+    <article class="blog-post-content">
+        {{ post.content|safe }}
+    </article>
+    
+    <!-- Tags -->
     {% if post.tags %}
-    <div class="post-tags">
+    <div class="blog-post-tags">
         {% for tag in post.tags %}
-        <a href="{{ url_for('blog.tag', slug=tag.slug) }}" class="post-tag">{{ tag.name }}</a>
+        <a href="{{ url_for('blog.tag', slug=tag.slug) }}" class="blog-post-tag">{{ tag.name }}</a>
         {% endfor %}
     </div>
     {% endif %}
     
+    <!-- Comments section -->
     {% if post.comments_enabled %}
-    <div class="post-comments">
-        <div class="comments-header">
-            <h3>Comments ({{ comments|length }})</h3>
-            <button class="comment-toggle">Hide Comments</button>
-        </div>
+    <div class="comments-section" id="comments">
+        <h3>Comments</h3>
         
-        <div class="comments-list">
-            {% if comments %}
-                {% for comment in comments %}
-                <div class="comment">
-                    <img src="{{ url_for('static', filename='images/default-avatar.jpg') }}" alt="{{ comment.name }}" class="comment-avatar">
-                    <div class="comment-content">
-                        <div class="comment-author">{{ comment.name }}</div>
-                        <div class="comment-date">{{ comment.created_at.strftime('%B %d, %Y at %H:%M') }}</div>
-                        <div class="comment-text">
-                            <p>{{ comment.content }}</p>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            {% else %}
-                <p class="no-comments">No comments yet. Be the first to comment!</p>
-            {% endif %}
+        {% if post.approved_comments %}
+        {% for comment in post.approved_comments %}
+        <div class="comment">
+            <div class="comment-meta">
+                <span class="comment-author">{{ comment.name }}</span>
+                <span class="comment-date">{{ comment.created_at.strftime('%B %d, %Y') }}</span>
+            </div>
+            <div class="comment-content">
+                {{ comment.content }}
+            </div>
         </div>
+        {% endfor %}
+        {% else %}
+        <p>No comments yet. Be the first to comment!</p>
+        {% endif %}
         
         <div class="comment-form">
             <h4>Leave a Comment</h4>
-            <form action="{{ url_for('blog.add_comment', slug=post.slug) }}" method="post">
+            <form action="{{ url_for('blog.add_comment', slug=post.slug) }}" method="POST">
                 <div class="form-group">
                     <label for="name">Name</label>
-                    <input type="text" class="form-control" id="name" name="name" required>
+                    <input type="text" id="name" name="name" required>
                 </div>
-                
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" class="form-control" id="email" name="email" required>
+                    <input type="email" id="email" name="email" required>
                 </div>
-                
                 <div class="form-group">
                     <label for="content">Comment</label>
-                    <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
+                    <textarea id="content" name="content" required></textarea>
                 </div>
-                
                 <button type="submit" class="submit-button">Submit Comment</button>
             </form>
         </div>
     </div>
     {% endif %}
     
-    {% if related_posts %}
-    <div class="related-posts">
-        <h3>Related Posts</h3>
-        <div class="blog-posts">
-            {% for related in related_posts %}
-            <div class="blog-post">
-                <div class="blog-post-thumbnail">
-                    <img src="{{ url_for('static', filename=related.featured_image) if related.featured_image else url_for('static', filename='images/default-post.jpg') }}" alt="{{ related.title }}">
-                </div>
-                <div class="blog-post-content">
-                    <div class="blog-post-meta">
-                        <span class="blog-post-date">{{ related.created_at.strftime('%B %d, %Y') }}</span>
-                        <span class="blog-post-category">{{ related.category.name }}</span>
-                    </div>
-                    <h3 class="blog-post-title">{{ related.title }}</h3>
-                    <p class="blog-post-excerpt">{{ related.excerpt }}</p>
-                    <a href="{{ url_for('blog.post', slug=related.slug) }}" class="read-more">Read More</a>
-                </div>
-            </div>
-            {% endfor %}
-        </div>
+    <!-- Table of contents button -->
+    <div class="toc-button" title="Table of Contents">
+        <i class="fas fa-list"></i>
     </div>
-    {% endif %}
-</article>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const commentToggle = document.querySelector('.comment-toggle');
-        const commentsList = document.querySelector('.comments-list');
-        const commentForm = document.querySelector('.comment-form');
-        
-        if (commentToggle && commentsList && commentForm) {
-            commentToggle.addEventListener('click', function() {
-                commentsList.classList.toggle('hidden');
-                commentForm.classList.toggle('hidden');
-                
-                this.textContent = commentsList.classList.contains('hidden') 
-                    ? 'Show Comments' 
-                    : 'Hide Comments';
-            });
-        }
-    });
-</script>
+</div>
 {% endblock %}
