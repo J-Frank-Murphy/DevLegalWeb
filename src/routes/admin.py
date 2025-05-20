@@ -99,6 +99,7 @@ def new_post():
         tag_ids = request.form.getlist('tags')
         featured_image = request.form.get('featured_image')
         published = 'published' in request.form
+        comments_enabled = 'comments_enabled' in request.form
         
         # Validate required fields
         if not title or not content or not category_id:
@@ -117,6 +118,7 @@ def new_post():
             category_id=category_id,
             featured_image=featured_image,
             published=published
+            comments_enabled=comments_enabled
         )
         
         # Add tags
@@ -152,6 +154,7 @@ def edit_post(post_id):
         post.category_id = request.form.get('category_id')
         post.featured_image = request.form.get('featured_image')
         post.published = 'published' in request.form
+        post.comments_enabled = 'comments_enabled' in request.form
         
         # Update tags
         post.tags = []
