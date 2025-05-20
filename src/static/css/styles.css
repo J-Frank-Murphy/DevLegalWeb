@@ -481,7 +481,7 @@ nav ul li a:hover::after {
 /* Latest Blog Posts Section */
 .latest-posts {
     padding: 5rem 0;
-    background-color: var(--light-gray);
+    background-color: var(--white);
 }
 
 .latest-posts h2 {
