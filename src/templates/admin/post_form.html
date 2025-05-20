@@ -28,6 +28,7 @@
         <div class="form-group">
             <label for="content">Content</label>
             <textarea id="content" name="content" class="tinymce-editor">{{ post.content if post else '' }}</textarea>
+            <small>HTML markup is allowed in the content</small>
         </div>
         
         <div class="form-group">
@@ -53,8 +54,21 @@
         </div>
         
         <div class="form-group">
-            <label for="featured_image">Featured Image URL</label>
-            <input type="text" id="featured_image" name="featured_image" value="{{ post.featured_image if post else '' }}">
+            <label for="featured_image_url">Featured Image URL</label>
+            <input type="text" id="featured_image_url" name="featured_image_url" value="{{ post.featured_image if post else '' }}">
+            <small>Enter a URL or upload an image below</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="featured_image_file">Upload Featured Image</label>
+            <input type="file" id="featured_image_file" name="featured_image_file" accept="image/*">
+            <small>Supported formats: JPG, PNG, GIF, WebP</small>
+            {% if post and post.featured_image %}
+            <div class="current-image">
+                <p>Current image:</p>
+                <img src="{{ url_for('static', filename=post.featured_image) }}" alt="Featured image" style="max-width: 200px; max-height: 200px;">
+            </div>
+            {% endif %}
         </div>
         
         <div class="form-group checkbox-group">
@@ -78,7 +92,7 @@
 {% block scripts %}
 {{ super() }}
 <script>
-    // Initialize TinyMCE
+    // Initialize TinyMCE with HTML support
     tinymce.init({
         selector: '.tinymce-editor',
         height: 500,
@@ -91,8 +105,24 @@
         toolbar: 'undo redo | formatselect | ' +
         'bold italic backcolor | alignleft aligncenter ' +
         'alignright alignjustify | bullist numlist outdent indent | ' +
-        'removeformat | help',
-        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
+        'removeformat | code | help',
+        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+        // Allow HTML content to be edited directly
+        valid_elements: '*[*]',
+        extended_valid_elements: '*[*]',
+        valid_children: '+body[style]',
+        verify_html: false,
+        cleanup: false,
+        // Add code button to view/edit HTML directly
+        setup: function(editor) {
+            editor.ui.registry.addButton('code', {
+                icon: 'code',
+                tooltip: 'Source code',
+                onAction: function() {
+                    editor.execCommand('mceCodeEditor');
+                }
+            });
+        }
     });
 </script>
 {% endblock %}
