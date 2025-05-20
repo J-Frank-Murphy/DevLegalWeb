@@ -1,14 +1,39 @@
-<!-- Newsletter Section -->
-<section id="newsletter" class="newsletter">
-    <div class="container">
-        <h2>Stay Updated</h2>
-        <p>Subscribe to our newsletter for the latest updates on technology law and compliance.</p>
-        <form id="newsletter-form" action="{{ url_for('main.subscribe') }}" method="POST">
-            <div class="form-group">
-                <input type="email" name="email" placeholder="Your email address" required>
+    <!-- Newsletter Section -->
+    <section class="newsletter">
+        <div class="container">
+            <h2>Join Our Email Newsletter List And Receive Our Free Compliance Explainer</h2>
+            <p>Our one-page Dev Legal Compliance Explainer is an easy-reference guide to understanding compliance concepts for you or your clients. Our email newsletter includes information about news and recent developments in the technology regulatory landscape and is sent approximately once a month.</p>
+            
+            <form class="newsletter-form">
+                <div class="form-group">
+                    <input type="text" class="form-control" id="first-name" name="first_name" placeholder="Your First Name" required>
+                </div>
+                
+                <div class="form-group">
+                    <input type="text" class="form-control" id="last-name" name="last_name" placeholder="Your Last Name" required>
+                </div>
+                
+                <div class="form-group">
+                    <select class="form-control form-select" id="role" name="role" required>
+                        <option value="" selected disabled>Your Role</option>
+                        <option value="Business Owner">Business Owner</option>
+                        <option value="Attorney - Law Firm">Attorney - Law Firm</option>
+                        <option value="Attorney - In-House Counsel">Attorney - In-House Counsel</option>
+                        <option value="InfoSec Professional">InfoSec Professional</option>
+                        <option value="IT Professional">IT Professional</option>
+                        <option value="Compliance Professional">Compliance Professional</option>
+                        <option value="Finance Professional">Finance Professional</option>
+                        <option value="Executive">Executive</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <input type="email" class="form-control" id="email" name="email" placeholder="Your Email Address" required>
+                </div>
+                
                 <button type="submit" class="submit-button">Subscribe</button>
-            </div>
-        </form>
-        <div id="newsletter-message"></div>
-    </div>
-</section>
+                
+                <a href="/privacy-policy" class="privacy-link">Our Privacy Policy</a>
+            </form>
+        </div>
+    </section>
