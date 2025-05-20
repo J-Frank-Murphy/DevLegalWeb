@@ -1,0 +1,73 @@
+{% extends "admin/base_layout.html" %}
+
+{% block title %}Manage Comments - Dev Legal{% endblock %}
+
+{% block header_title %}Comments{% endblock %}
+
+{% block content %}
+<div class="admin-content">
+    <div class="table-container">
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Author</th>
+                        <th>Comment</th>
+                        <th>Post</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comment in comments.items %}
+                    <tr>
+                        <td>{{ comment.author }}</td>
+                        <td>{{ comment.content[:50] }}{% if comment.content|length > 50 %}...{% endif %}</td>
+                        <td><a href="{{ url_for('blog.post', slug=comment.post.slug) }}" target="_blank">{{ comment.post.title }}</a></td>
+                        <td>{{ comment.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            {% if comment.approved %}
+                            <span class="badge badge-success">Approved</span>
+                            {% else %}
+                            <span class="badge badge-warning">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td class="actions">
+                            {% if not comment.approved %}
+                            <form method="POST" action="{{ url_for('admin.approve_comment', comment_id=comment.id) }}" class="inline-form">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-sm btn-success">Approve</button>
+                            </form>
+                            {% endif %}
+                            <form method="POST" action="{{ url_for('admin.delete_comment', comment_id=comment.id) }}" class="inline-form" onsubmit="return confirm('Are you sure you want to delete this comment?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">No comments found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if comments.pages > 1 %}
+    <div class="pagination">
+        {% if comments.has_prev %}
+        <a href="{{ url_for('admin.comments', page=comments.prev_num) }}" class="btn btn-sm btn-secondary">&laquo; Previous</a>
+        {% endif %}
+        
+        <span class="pagination-info">Page {{ comments.page }} of {{ comments.pages }}</span>
+        
+        {% if comments.has_next %}
+        <a href="{{ url_for('admin.comments', page=comments.next_num) }}" class="btn btn-sm btn-secondary">Next &raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

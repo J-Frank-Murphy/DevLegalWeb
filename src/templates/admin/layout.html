@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - Dev Legal Admin</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='images/new/favicon.png') }}" type="image/x-icon">
+</head>
+<body>
+    <div class="admin-container">
+        {% if current_user.is_authenticated %}
+        <div class="admin-sidebar">
+            <div class="admin-logo">
+                <img src="{{ url_for('static', filename='images/new/logo-horizontal.png') }}" alt="Dev Legal Logo">
+            </div>
+            <nav class="admin-nav">
+                <ul>
+                    <li><a href="{{ url_for('admin.dashboard') }}" {% if request.endpoint == 'admin.dashboard' %}class="active"{% endif %}>Dashboard</a></li>
+                    <li><a href="{{ url_for('admin.posts') }}" {% if request.endpoint == 'admin.posts' or request.endpoint == 'admin.new_post' or request.endpoint == 'admin.edit_post' %}class="active"{% endif %}>Posts</a></li>
+                    <li><a href="{{ url_for('admin.categories') }}" {% if request.endpoint == 'admin.categories' or request.endpoint == 'admin.new_category' or request.endpoint == 'admin.edit_category' %}class="active"{% endif %}>Categories</a></li>
+                    <li><a href="{{ url_for('admin.tags') }}" {% if request.endpoint == 'admin.tags' or request.endpoint == 'admin.new_tag' or request.endpoint == 'admin.edit_tag' %}class="active"{% endif %}>Tags</a></li>
+                    <li><a href="{{ url_for('admin.comments') }}" {% if request.endpoint == 'admin.comments' %}class="active"{% endif %}>Comments</a></li>
+                </ul>
+            </nav>
+            <div class="admin-footer">
+                <a href="/" class="view-site">View Site</a>
+                <a href="{{ url_for('admin.logout') }}" class="logout">Logout</a>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="admin-main">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+    
+    <script>
+        // Simple script to handle slug generation
+        document.addEventListener('DOMContentLoaded', function() {
+            const titleInput = document.getElementById('title');
+            const slugInput = document.getElementById('slug');
+            
+            if (titleInput && slugInput) {
+                titleInput.addEventListener('blur', function() {
+                    if (slugInput.value === '') {
+                        slugInput.value = titleInput.value
+                            .toLowerCase()
+                            .replace(/[^\w\s-]/g, '')
+                            .replace(/\s+/g, '-')
+                            .replace(/-+/g, '-')
+                            .trim();
+                    }
+                });
+            }
+            
+            const nameInput = document.getElementById('name');
+            if (nameInput && slugInput) {
+                nameInput.addEventListener('blur', function() {
+                    if (slugInput.value === '') {
+                        slugInput.value = nameInput.value
+                            .toLowerCase()
+                            .replace(/[^\w\s-]/g, '')
+                            .replace(/\s+/g, '-')
+                            .replace(/-+/g, '-')
+                            .trim();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

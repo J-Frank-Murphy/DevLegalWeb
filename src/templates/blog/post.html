@@ -1,0 +1,137 @@
+{% extends "blog/layout.html" %}
+
+{% block title %}{{ post.title }} | Dev Legal Blog{% endblock %}
+{% block meta_description %}{{ post.excerpt }}{% endblock %}
+
+{% block header_title %}{{ post.title }}{% endblock %}
+{% block header_description %}{{ post.created_at.strftime('%B %d, %Y') }} • {{ post.reading_time }} min read{% endblock %}
+
+{% block content %}
+<article class="single-post">
+    <div class="post-header">
+        <div class="post-meta">
+            <div class="post-author">
+                <img src="{{ url_for('static', filename='images/author.jpg') }}" alt="Author" class="author-avatar">
+                <span>Sabir Ibrahim</span>
+            </div>
+            <div class="post-date">{{ post.created_at.strftime('%B %d, %Y') }}</div>
+            <div class="post-category">
+                <a href="{{ url_for('blog.category', slug=post.category.slug) }}">{{ post.category.name }}</a>
+            </div>
+        </div>
+        
+        {% if post.featured_image %}
+        <div class="post-featured-image">
+            <img src="{{ url_for('static', filename=post.featured_image) }}" alt="{{ post.title }}">
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="post-content">
+        {{ post.html_content|safe }}
+    </div>
+    
+    {% if post.tags %}
+    <div class="post-tags">
+        {% for tag in post.tags %}
+        <a href="{{ url_for('blog.tag', slug=tag.slug) }}" class="post-tag">{{ tag.name }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    {% if post.comments_enabled %}
+    <div class="post-comments">
+        <div class="comments-header">
+            <h3>Comments ({{ comments|length }})</h3>
+            <button class="comment-toggle">Hide Comments</button>
+        </div>
+        
+        <div class="comments-list">
+            {% if comments %}
+                {% for comment in comments %}
+                <div class="comment">
+                    <img src="{{ url_for('static', filename='images/default-avatar.jpg') }}" alt="{{ comment.name }}" class="comment-avatar">
+                    <div class="comment-content">
+                        <div class="comment-author">{{ comment.name }}</div>
+                        <div class="comment-date">{{ comment.created_at.strftime('%B %d, %Y at %H:%M') }}</div>
+                        <div class="comment-text">
+                            <p>{{ comment.content }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p class="no-comments">No comments yet. Be the first to comment!</p>
+            {% endif %}
+        </div>
+        
+        <div class="comment-form">
+            <h4>Leave a Comment</h4>
+            <form action="{{ url_for('blog.add_comment', slug=post.slug) }}" method="post">
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="content">Comment</label>
+                    <textarea class="form-control" id="content" name="content" rows="5" required></textarea>
+                </div>
+                
+                <button type="submit" class="submit-button">Submit Comment</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if related_posts %}
+    <div class="related-posts">
+        <h3>Related Posts</h3>
+        <div class="blog-posts">
+            {% for related in related_posts %}
+            <div class="blog-post">
+                <div class="blog-post-thumbnail">
+                    <img src="{{ url_for('static', filename=related.featured_image) if related.featured_image else url_for('static', filename='images/default-post.jpg') }}" alt="{{ related.title }}">
+                </div>
+                <div class="blog-post-content">
+                    <div class="blog-post-meta">
+                        <span class="blog-post-date">{{ related.created_at.strftime('%B %d, %Y') }}</span>
+                        <span class="blog-post-category">{{ related.category.name }}</span>
+                    </div>
+                    <h3 class="blog-post-title">{{ related.title }}</h3>
+                    <p class="blog-post-excerpt">{{ related.excerpt }}</p>
+                    <a href="{{ url_for('blog.post', slug=related.slug) }}" class="read-more">Read More</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</article>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const commentToggle = document.querySelector('.comment-toggle');
+        const commentsList = document.querySelector('.comments-list');
+        const commentForm = document.querySelector('.comment-form');
+        
+        if (commentToggle && commentsList && commentForm) {
+            commentToggle.addEventListener('click', function() {
+                commentsList.classList.toggle('hidden');
+                commentForm.classList.toggle('hidden');
+                
+                this.textContent = commentsList.classList.contains('hidden') 
+                    ? 'Show Comments' 
+                    : 'Hide Comments';
+            });
+        }
+    });
+</script>
+{% endblock %}

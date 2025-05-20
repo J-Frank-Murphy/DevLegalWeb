@@ -1,0 +1,74 @@
+{% extends "blog/layout.html" %}
+
+{% block title %}Search Results for "{{ query }}" | Dev Legal Blog{% endblock %}
+{% block meta_description %}Search results for "{{ query }}" on the Dev Legal blog.{% endblock %}
+
+{% block header_title %}Search Results for "{{ query }}"{% endblock %}
+{% block header_description %}Found {{ posts.total }} result{% if posts.total != 1 %}s{% endif %}{% endblock %}
+
+{% block content %}
+<div class="blog-posts">
+    {% if posts.items %}
+        {% for post in posts.items %}
+        <div class="blog-post">
+            <div class="blog-post-thumbnail">
+                <img src="{{ url_for('static', filename=post.featured_image) if post.featured_image else url_for('static', filename='images/default-post.jpg') }}" alt="{{ post.title }}">
+            </div>
+            <div class="blog-post-content">
+                <div class="blog-post-meta">
+                    <span class="blog-post-date">{{ post.created_at.strftime('%B %d, %Y') }}</span>
+                    <span class="blog-post-category">{{ post.category.name }}</span>
+                </div>
+                <h3 class="blog-post-title">{{ post.title }}</h3>
+                <p class="blog-post-excerpt">{{ post.excerpt }}</p>
+                <a href="{{ url_for('blog.post', slug=post.slug) }}" class="read-more">Read More</a>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="no-results">
+            <h3>No results found</h3>
+            <p>Sorry, no posts match your search criteria. Please try a different search term.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Pagination -->
+{% if posts.pages > 1 %}
+<div class="pagination">
+    {% if posts.has_prev %}
+    <div class="pagination-item">
+        <a href="{{ url_for('blog.search', q=query, page=posts.prev_num) }}" class="pagination-link">
+            <i class="fas fa-chevron-left"></i>
+        </a>
+    </div>
+    {% endif %}
+    
+    {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if page_num %}
+            {% if page_num == posts.page %}
+            <div class="pagination-item">
+                <span class="pagination-link active">{{ page_num }}</span>
+            </div>
+            {% else %}
+            <div class="pagination-item">
+                <a href="{{ url_for('blog.search', q=query, page=page_num) }}" class="pagination-link">{{ page_num }}</a>
+            </div>
+            {% endif %}
+        {% else %}
+        <div class="pagination-item">
+            <span class="pagination-ellipsis">...</span>
+        </div>
+        {% endif %}
+    {% endfor %}
+    
+    {% if posts.has_next %}
+    <div class="pagination-item">
+        <a href="{{ url_for('blog.search', q=query, page=posts.next_num) }}" class="pagination-link">
+            <i class="fas fa-chevron-right"></i>
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
