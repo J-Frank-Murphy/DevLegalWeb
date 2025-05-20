@@ -444,7 +444,7 @@
     </a>
     
     <!-- Blog Post Header -->
-    <header class="blog-post-header">
+    <div class="blog-post-header">
         <!-- Category badge -->
         <a href="{{ url_for('blog.category', slug=post.category.slug) }}" class="category-badge">
             {{ post.category.name }}
@@ -458,14 +458,8 @@
             {{ post.excerpt }}
         </div>
         
-        <!-- Author info -->
-        <div class="blog-post-author">
-             <div class="author-info">
-                <a href="#" class="author-name">{{ post.author.name if post.author else 'Sabir Ibrahim' }}</a>
-                <div class="post-date">{{ post.created_at.strftime('%B %d, %Y') }}</div>
-            </div>
-        </div>
-    </header>
+
+    </div>
     
     <!-- Featured image with caption -->
     {% if post.featured_image %}
@@ -473,6 +467,14 @@
         <img src="{{ url_for('static', filename=post.featured_image) }}" alt="{{ post.title }}" class="blog-post-featured-image">
     </div>
     {% endif %}
+
+        <!-- Author info -->
+        <div class="blog-post-author">
+             <div class="author-info">
+                <a href="#" class="author-name">{{ post.author.name if post.author else 'Sabir Ibrahim' }}</a>
+                <div class="post-date">{{ post.created_at.strftime('%B %d, %Y') }}</div>
+            </div>
+        </div>    
     
     <!-- Blog post content -->
     <article class="blog-post-content">
