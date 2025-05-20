@@ -1,14 +1,41 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 from src.models.user import User
 from src.models.blog import Post, Category, Tag, Comment
 from src.models import db
 import os
 from datetime import datetime
+import uuid
 
 # Create blueprint
 admin_bp = Blueprint('admin', __name__)
+
+def allowed_file(filename):
+    """Check if a filename has an allowed extension"""
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in current_app.config['ALLOWED_EXTENSIONS']
+
+def save_image(file):
+    """Save an uploaded image and return the path"""
+    if file and allowed_file(file.filename):
+        # Generate a secure filename with a unique identifier
+        filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4().hex}_{filename}"
+        
+        # Create uploads directory if it doesn't exist
+        uploads_dir = os.path.join(current_app.static_folder, 'uploads')
+        os.makedirs(uploads_dir, exist_ok=True)
+        
+        # Save the file
+        file_path = os.path.join(uploads_dir, unique_filename)
+        file.save(file_path)
+        
+        # Return the relative path for database storage
+        return f'uploads/{unique_filename}'
+    
+    return None
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -97,7 +124,7 @@ def new_post():
         content = request.form.get('content')
         category_id = request.form.get('category_id')
         tag_ids = request.form.getlist('tags')
-        featured_image = request.form.get('featured_image')
+        featured_image_url = request.form.get('featured_image_url')
         published = 'published' in request.form
         comments_enabled = 'comments_enabled' in request.form
         
@@ -108,6 +135,15 @@ def new_post():
                                   title="New Post",
                                   categories=categories,
                                   tags=tags)
+        
+        # Handle featured image (file upload takes precedence over URL)
+        featured_image = featured_image_url
+        if 'featured_image_file' in request.files:
+            file = request.files['featured_image_file']
+            if file and file.filename:
+                file_path = save_image(file)
+                if file_path:
+                    featured_image = file_path
         
         # Create new post
         post = Post(
@@ -152,9 +188,27 @@ def edit_post(post_id):
         post.excerpt = request.form.get('excerpt')
         post.content = request.form.get('content')
         post.category_id = request.form.get('category_id')
-        post.featured_image = request.form.get('featured_image')
+        featured_image_url = request.form.get('featured_image_url')
         post.published = 'published' in request.form
         post.comments_enabled = 'comments_enabled' in request.form
+        
+        # Handle featured image (file upload takes precedence over URL)
+        if 'featured_image_file' in request.files:
+            file = request.files['featured_image_file']
+            if file and file.filename:
+                file_path = save_image(file)
+                if file_path:
+                    post.featured_image = file_path
+                    # If a new file is uploaded, it takes precedence over the URL
+                else:
+                    # If file upload fails, use the URL
+                    post.featured_image = featured_image_url
+            else:
+                # If no file is uploaded, use the URL
+                post.featured_image = featured_image_url
+        else:
+            # If no file field in request, use the URL
+            post.featured_image = featured_image_url
         
         # Update tags
         post.tags = []
