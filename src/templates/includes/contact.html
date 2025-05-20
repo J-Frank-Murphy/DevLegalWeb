@@ -1,52 +1,65 @@
 <!-- Contact Section -->
-<section id="contact" class="contact">
-    <div class="container">
-        <h2>Get in Touch</h2>
-        <p class="section-intro">Have a question or need legal assistance? Reach out to us using the form below.</p>
-        
-        <div class="contact-container">
-            <div class="contact-form">
-                <form id="contact-form" action="#" method="POST">
-                    <div class="form-group">
-                        <label for="name">Name</label>
-                        <input type="text" id="name" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="message">Message</label>
-                        <textarea id="message" name="message" rows="5" required></textarea>
-                    </div>
-                    <button type="submit" class="submit-button">Send Message</button>
-                </form>
-                <div id="contact-message"></div>
-            </div>
+    <section id="contact" class="contact">
+        <div class="container">
+            <h2>Contact Us</h2>
             
-            <div class="contact-info">
-                <div class="info-item">
-                    <i class="fas fa-envelope info-icon"></i>
-                    <div>
-                        <h3>Email</h3>
-                        <p>info@devlegal.com</p>
+            <div class="contact-container">
+                <div class="contact-info">
+                    <h3>Get In Touch</h3>
+                    
+                    <div class="contact-method">
+                        <div class="contact-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Email</h4>
+                            <a href="mailto:inquiries@dev.legal">inquiries@dev.legal</a>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-method">
+                        <div class="contact-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Phone</h4>
+                            <a href="tel:5102553766">510.255.3766</a>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-method">
+                        <div class="contact-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h4>Mail</h4>
+                            <p>PO Box 721<br>Union City, CA 94587</p>
+                        </div>
                     </div>
                 </div>
-                <div class="info-item">
-                    <i class="fas fa-phone info-icon"></i>
-                    <div>
-                        <h3>Phone</h3>
-                        <p>(555) 123-4567</p>
-                    </div>
-                </div>
-                <div class="info-item">
-                    <i class="fas fa-map-marker-alt info-icon"></i>
-                    <div>
-                        <h3>Location</h3>
-                        <p>San Francisco, CA</p>
-                    </div>
+                
+                <div class="contact-form">
+                    <h3>Send Us a Message</h3>
+                    
+                    <form>
+                        <div class="form-group">
+                            <label for="name">Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="contact-email">Email</label>
+                            <input type="email" class="form-control" id="contact-email" name="email" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="message">Message</label>
+                            <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="submit-button">Send Message</button>
+                    </form>
                 </div>
             </div>
         </div>
-    </div>
-</section>
+    </section>
