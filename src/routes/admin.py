@@ -40,7 +40,7 @@ def save_image(file):
 @admin_bp.route('/upload-image', methods=['POST'])
 @login_required
 def upload_image():
-    """Handle image uploads from TinyMCE editor"""
+    """Handle image uploads from Quill editor"""
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
     
@@ -52,12 +52,14 @@ def upload_image():
     if file and allowed_file(file.filename):
         file_path = save_image(file)
         if file_path:
-            # Return the URL for the uploaded image
+            # Return the URL for the uploaded image in Quill format
             return jsonify({
-                'location': url_for('static', filename=file_path)
+                'success': True,
+                'url': url_for('static', filename=file_path)
             })
     
     return jsonify({'error': 'Invalid file type'}), 400
+
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
