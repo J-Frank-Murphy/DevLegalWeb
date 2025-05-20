@@ -32,12 +32,12 @@ def create_app(config=None):
     migrate = Migrate(app, db)
     init_csrf(app)
     
-    # Register blueprints
-    register_blueprints(app)
-    
     # Register main routes
     from src.routes.main import register_main_routes
     register_main_routes(app)
+
+    # Register blueprints
+    register_blueprints(app)    
     
     # Register error handlers
     register_error_handlers(app)
