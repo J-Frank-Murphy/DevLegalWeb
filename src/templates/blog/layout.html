@@ -79,11 +79,10 @@
     <header>
         <div class="header-container">
             <div class="logo">
-                <a href="/">
+                <a href="{{ url_for('main.index') }}">
                     <img src="{{ url_for('static', filename='images/new/logo-horizontal.png') }}" alt="Dev Legal Logo">
                 </a>
-            </div>
-            
+            </div>            
             <nav>
                 <ul>
                     <li><a href="#about">About</a></li>
