@@ -7,7 +7,7 @@
 {% block content %}
 <div class="admin-content">
     <form method="POST" enctype="multipart/form-data" class="post-form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token( ) }}"/>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         
         <div class="form-group">
             <label for="title">Title</label>
@@ -27,10 +27,8 @@
         
         <div class="form-group">
             <label for="content">Content</label>
-            <!-- Replace textarea with Quill container and hidden input -->
-            <div id="editor-container" style="height: 400px;"></div>
-            <input type="hidden" id="content" name="content" value="{{ post.content if post else '' }}">
-            <small>Use the rich text editor to format content, add images, tables, and more</small>
+            <textarea id="content" name="content" rows="15">{{ post.content if post else '' }}</textarea>
+            <small>HTML markup is allowed</small>
         </div>
         
         <div class="form-group">
@@ -89,116 +87,13 @@
         </div>
     </form>
 </div>
-
-<!-- Add CSS for the editor -->
-<style>
-    /* Custom styles for the Quill editor */
-    .ql-editor {
-        min-height: 300px;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        font-size: 16px;
-        line-height: 1.6;
-        color: #333;
-    }
-    
-    .ql-toolbar {
-        background-color: #f8f9fa;
-        border-top-left-radius: 4px;
-        border-top-right-radius: 4px;
-        border: 1px solid #ddd;
-    }
-    
-    .ql-container {
-        border-bottom-left-radius: 4px;
-        border-bottom-right-radius: 4px;
-        border: 1px solid #ddd;
-        border-top: none;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-    
-    /* Style for image captions */
-    .image-caption {
-        font-style: italic;
-        color: #666;
-        text-align: center;
-        margin-top: 5px;
-    }
-</style>
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
 <script>
+    // Auto-generate slug from title
     document.addEventListener('DOMContentLoaded', function() {
-        // Initialize Quill editor with full toolbar
-        var quill = new Quill('#editor-container', {
-            modules: {
-                toolbar: [
-                    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                    ['bold', 'italic', 'underline', 'strike'],
-                    [{ 'color': [] }, { 'background': [] }],
-                    [{ 'align': [] }],
-                    [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-                    [{ 'indent': '-1' }, { 'indent': '+1' }],
-                    ['blockquote', 'code-block'],
-                    ['link', 'image', 'video'],
-                    ['clean']
-                ]
-            },
-            placeholder: 'Compose your content...',
-            theme: 'snow'
-        });
-        
-        // Set initial content if editing an existing post
-        const contentInput = document.getElementById('content');
-        if (contentInput.value) {
-            quill.root.innerHTML = contentInput.value;
-        }
-        
-        // Custom image handler
-        var toolbar = quill.getModule('toolbar');
-        toolbar.addHandler('image', function() {
-            var fileInput = document.createElement('input');
-            fileInput.setAttribute('type', 'file');
-            fileInput.setAttribute('accept', 'image/*');
-            fileInput.click();
-            
-            fileInput.onchange = function() {
-                var file = fileInput.files[0];
-                if (file) {
-                    var formData = new FormData();
-                    formData.append('file', file);
-                    
-                    // Get CSRF token
-                    var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-                    formData.append('csrf_token', token);
-                    
-                    // Upload the image
-                    var xhr = new XMLHttpRequest();
-                    xhr.open('POST', '/admin/upload-image', true);
-                    xhr.onload = function() {
-                        if (xhr.status === 200) {
-                            var response = JSON.parse(xhr.responseText);
-                            if (response.url) {
-                                // Insert the image into the editor
-                                var range = quill.getSelection();
-                                quill.insertEmbed(range.index, 'image', response.url);
-                            }
-                        } else {
-                            console.error('Upload failed');
-                        }
-                    };
-                    xhr.send(formData);
-                }
-            };
-        });
-        
-        // Update hidden input before form submission
-        document.querySelector('.post-form').addEventListener('submit', function() {
-            document.getElementById('content').value = quill.root.innerHTML;
-        });
-        
-        // Auto-generate slug from title
         const titleInput = document.getElementById('title');
         const slugInput = document.getElementById('slug');
         
