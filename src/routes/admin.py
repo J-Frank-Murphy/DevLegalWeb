@@ -117,7 +117,7 @@ def new_post():
             content=content,
             category_id=category_id,
             featured_image=featured_image,
-            published=published
+            published=published,
             comments_enabled=comments_enabled
         )
         
