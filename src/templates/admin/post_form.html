@@ -123,171 +123,23 @@
 
 {% block scripts %}
 <script>
-  // Direct initialization of TinyMCE
-  document.addEventListener('DOMContentLoaded', function() {
-    if (typeof tinymce !== 'undefined') {
-      tinymce.init({
-        selector: '.tinymce-editor',
-        height: 600,
-        menubar: true,
-        branding: false,
-        promotion: false,
-        
-        // Enable autosave
-        autosave_ask_before_unload: true,
-        autosave_interval: '30s',
-        autosave_prefix: 'tinymce-autosave-{path}{query}-{id}-',
-        autosave_restore_when_empty: true,
-        
-        // Enable all essential plugins for a rich WYSIWYG experience
-        plugins: [
-          'advlist', 'autolink', 'link', 'image', 'lists', 'charmap', 'preview', 
-          'anchor', 'pagebreak', 'searchreplace', 'wordcount', 'visualblocks', 
-          'visualchars', 'code', 'fullscreen', 'insertdatetime', 'media', 
-          'table', 'emoticons', 'template', 'help', 'hr', 'paste', 'importcss',
-          'autoresize', 'codesample', 'quickbars'
-        ],
-        
-        // Configure a comprehensive toolbar with all formatting options
-        toolbar1: 'undo redo | styles | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify',
-        toolbar2: 'bullist numlist outdent indent | link image media table | forecolor backcolor emoticons | code fullscreen',
-        toolbar3: 'searchreplace visualblocks visualchars | pagebreak hr | charmap | codesample | help',
-        
-        // Enable contextual toolbars for quick formatting
-        quickbars_selection_toolbar: 'bold italic | quicklink h2 h3 blockquote | removeformat',
-        quickbars_insert_toolbar: 'image media table hr',
-        
-        // Configure image handling for drag and drop
-        images_upload_url: '/admin/upload-image',
-        automatic_uploads: true,
-        images_reuse_filename: true,
-        file_picker_types: 'image',
-        
-        // Add image upload handler
-        images_upload_handler: function (blobInfo, success, failure) {
-          var xhr, formData;
-          xhr = new XMLHttpRequest();
-          xhr.withCredentials = false;
-          xhr.open('POST', '/admin/upload-image');
-          
-          // Get CSRF token from meta tag
-          var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-          
-          xhr.onload = function() {
-            var json;
-            
-            if (xhr.status != 200) {
-              failure('HTTP Error: ' + xhr.status);
-              return;
-            }
-            
-            json = JSON.parse(xhr.responseText);
-            
-            if (!json || typeof json.location != 'string') {
-              failure('Invalid JSON: ' + xhr.responseText);
-              return;
-            }
-            
-            success(json.location);
-          };
-          
-          formData = new FormData();
-          formData.append('file', blobInfo.blob(), blobInfo.filename());
-          formData.append('csrf_token', token);
-          
-          xhr.send(formData);
-        },
-        
-        // Configure file picker callback
-        file_picker_callback: function(cb, value, meta) {
-          var input = document.createElement('input');
-          input.setAttribute('type', 'file');
-          input.setAttribute('accept', 'image/*');
-          
-          input.onchange = function() {
-            var file = this.files[0];
-            var reader = new FileReader();
-            
-            reader.onload = function() {
-              var id = 'blobid' + (new Date()).getTime();
-              var blobCache = tinymce.activeEditor.editorUpload.blobCache;
-              var base64 = reader.result.split(',')[1];
-              var blobInfo = blobCache.create(id, file, base64);
-              blobCache.add(blobInfo);
-              
-              cb(blobInfo.blobUri(), { title: file.name });
-            };
-            
-            reader.readAsDataURL(file);
-          };
-          
-          input.click();
-        },
-        
-        // Content styling
-        content_style: `
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; font-size: 16px; line-height: 1.6; color: #333; max-width: 900px; margin: 0 auto; padding: 20px; }
-          h1 { font-size: 2.4em; margin-top: 0.5em; margin-bottom: 0.5em; color: #2c3e50; }
-          h2 { font-size: 2em; margin-top: 0.6em; margin-bottom: 0.6em; color: #2c3e50; }
-          h3 { font-size: 1.6em; margin-top: 0.7em; margin-bottom: 0.7em; color: #2c3e50; }
-          h4 { font-size: 1.4em; margin-top: 0.8em; margin-bottom: 0.8em; color: #2c3e50; }
-          p { margin-top: 0; margin-bottom: 1em; }
-          img { max-width: 100%; height: auto; }
-          figure { margin: 1em 0; }
-          figure img { display: block; max-width: 100%; height: auto; }
-          figcaption { font-size: 0.9em; color: #666; text-align: center; margin-top: 0.5em; }
-          blockquote { border-left: 3px solid #2c3e50; margin-left: 0; padding-left: 1em; color: #555; }
-          pre { background-color: #f5f7fa; padding: 15px; border-radius: 4px; overflow: auto; }
-          code { font-family: Monaco, Consolas, 'Courier New', monospace; background-color: #f5f7fa; padding: 2px 4px; border-radius: 3px; }
-          table { border-collapse: collapse; width: 100%; margin-bottom: 1em; }
-          table th, table td { border: 1px solid #ddd; padding: 8px; }
-          table th { background-color: #f5f7fa; text-align: left; }
-          a { color: #3498db; text-decoration: none; }
-          a:hover { text-decoration: underline; }
-          ul, ol { margin-top: 0; margin-bottom: 1em; padding-left: 2em; }
-          hr { border: none; border-top: 1px solid #eee; margin: 2em 0; }
-        `,
-        
-        // Set up templates for common content structures
-        templates: [
-          { 
-            title: 'Legal Case Summary', 
-            description: 'Structure for summarizing legal cases',
-            content: '<h2>Case Summary: [Case Name]</h2><p><strong>Court:</strong> [Court Name]</p><p><strong>Date:</strong> [Decision Date]</p><p><strong>Key Issue:</strong> [Brief description of the key legal issue]</p><h3>Background</h3><p>[Case background details]</p><h3>Holding</h3><p>[The court\'s decision]</p><h3>Reasoning</h3><p>[Explanation of the court\'s reasoning]</p><h3>Implications</h3><p>[What this means for practitioners]</p>'
-          },
-          {
-            title: 'Legal Analysis Article',
-            description: 'Template for legal analysis articles',
-            content: '<h1>[Title]</h1><p class="author">By [Author Name]</p><p class="date">[Publication Date]</p><h2>Introduction</h2><p>[Introduce the legal topic and why it matters]</p><h2>Current Legal Framework</h2><p>[Describe the relevant laws and regulations]</p><h2>Analysis</h2><p>[Your legal analysis]</p><h2>Practical Implications</h2><p>[What this means for clients or practitioners]</p><h2>Conclusion</h2><p>[Summarize key points and provide outlook]</p>'
-          }
-        ],
-        
-        // Setup event handlers
-        setup: function(editor) {
-          // Auto-generate slug from title
-          editor.on('init', function() {
-            const titleInput = document.getElementById('title');
-            const slugInput = document.getElementById('slug');
-            
-            if (titleInput && slugInput) {
-              titleInput.addEventListener('blur', function() {
-                if (slugInput.value === '' && titleInput.value !== '') {
-                  // Simple slug generation (would be better handled by backend)
-                  slugInput.value = titleInput.value
-                    .toLowerCase()
-                    .replace(/[^\w\s-]/g, '')
-                    .replace(/\s+/g, '-')
-                    .replace(/-+/g, '-')
-                    .trim();
-                }
-              });
-            }
-          });
-        }
-      });
-    } else {
-      console.error('TinyMCE not loaded. Check script inclusion.');
-    }
+  tinymce.init({
+    selector: 'textarea',
+    plugins: [
+      // Core editing features
+      'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
+      // Your account includes a free trial of TinyMCE premium features
+      // Try the most popular premium features until Jun 3, 2025:
+      'checklist', 'mediaembed', 'casechange', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'editimage', 'advtemplate', 'ai', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown','importword', 'exportword', 'exportpdf'
+    ],
+    toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+    tinycomments_mode: 'embedded',
+    tinycomments_author: 'Author name',
+    mergetags_list: [
+      { value: 'First.Name', title: 'First Name' },
+      { value: 'Email', title: 'Email' },
+    ],
+    ai_request: (request, respondWith) => respondWith.string(() => Promise.reject('See docs to implement AI Assistant')),
   });
 </script>
 {% endblock %}
