@@ -1084,3 +1084,26 @@ footer {
         height: 250px;
     }
 }
+
+/* Global CSS fix for consistent blog post card widths */
+
+/* Make blog post cards consistent width across all pages */
+.blog-posts, .posts-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)) !important;
+    gap: 2rem !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .blog-posts, .posts-grid {
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .blog-posts, .posts-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+
