@@ -3,7 +3,7 @@
     <div class="container">
         <!-- Optional section title -->
         {% if section_title == "Latest Insights" %}
-            <h1 style="text-align: center; padding-top: 5rem; font-size: 2.2rem">{{ section_title }}</h1>
+            <h2>{{ section_title }}</h2>
         {% endif %}
         
         <!-- Post grid with aggressive styling to ensure consistent width -->
@@ -107,12 +107,7 @@
         <!-- Optional CTA button -->
         {% if show_view_all and view_all_url %}
         <div class="text-center">
-            <a 
-            href="{{ view_all_url }}"
-            class="cta-button"
-            style="margin-bottom: 5rem"
-            >
-            {{ view_all_text|default('View All Posts') }}</a>
+            <a href="{{ view_all_url }}" class="cta-button">{{ view_all_text|default('View All Posts') }}</a>
         </div>
         {% endif %}
     </div>
