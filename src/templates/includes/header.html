@@ -19,4 +19,43 @@
             <i class="fas fa-bars"></i>
         </button>
     </div>
+<!-- Add this at the bottom of your includes/header.html file, just before the closing </header> tag -->
+<script>
+  // Immediately executing function
+  (function() {
+    // Get the button directly
+    var menuButton = document.querySelector('.mobile-menu-toggle');
+    
+    // Add click event directly to the button
+    if (menuButton) {
+      menuButton.onclick = function(event) {
+        // Prevent default behavior
+        event.preventDefault();
+        
+        // Find the menu directly
+        var menu = document.querySelector('nav ul');
+        
+        // Toggle display
+        if (menu) {
+          if (menu.style.display === 'flex') {
+            menu.style.display = 'none';
+          } else {
+            menu.style.display = 'flex';
+            menu.style.flexDirection = 'column';
+            menu.style.position = 'absolute';
+            menu.style.top = '100%';
+            menu.style.left = '0';
+            menu.style.right = '0';
+            menu.style.backgroundColor = 'white';
+            menu.style.boxShadow = '0 5px 10px rgba(0,0,0,0.1)';
+            menu.style.padding = '1rem';
+            menu.style.zIndex = '1000';
+          }
+        }
+        
+        return false;
+      };
+    }
+  })();
+</script>
 </header>
