@@ -146,6 +146,7 @@ def new_post():
         slug = request.form.get('slug')
         excerpt = request.form.get('excerpt')
         content = request.form.get('content')
+        content_format = request.form.get('content_format', 'html')  # Default to HTML if not specified
         category_id = request.form.get('category_id')
         tag_ids = request.form.getlist('tags')
         featured_image_url = request.form.get('featured_image_url')
@@ -176,6 +177,7 @@ def new_post():
             slug=slug,
             excerpt=excerpt,
             content=content,
+            content_format=content_format,  # Save the content format
             category_id=category_id,
             featured_image=featured_image,
             published=published,
@@ -219,6 +221,7 @@ def edit_post(post_id):
         post.slug = request.form.get('slug')
         post.excerpt = request.form.get('excerpt')
         post.content = request.form.get('content')
+        post.content_format = request.form.get('content_format', 'html')  # Update content format
         post.category_id = request.form.get('category_id')
         featured_image_url = request.form.get('featured_image_url')
         post.published = 'published' in request.form
