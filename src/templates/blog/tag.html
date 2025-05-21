@@ -1,67 +1,218 @@
 {% extends "base.html" %}
 
-{% block title %}{{ tag.name }} | Dev Legal Blog{% endblock %}
-{% block meta_description %}Browse all posts tagged with {{ tag.name }} on the Dev Legal blog.{% endblock %}
+{% block title %}Tag: {{ tag.name }} | Dev Legal Blog{% endblock %}
 
-{% block header_title %}Posts Tagged: {{ tag.name }}{% endblock %}
-{% block header_description %}Browse all posts with this tag{% endblock %}
+{% block additional_styles %}
+<style>
+    /* Blog tag specific styles */
+    .blog-tag-header {
+        background-color: #f5f7fa;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .blog-tag-header .container {
+        max-width: 800px;
+        text-align: center;
+    }
+    
+    .blog-tag-title {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: #2c3e50;
+    }
+    
+    .blog-tag-description {
+        color: #7f8c8d;
+        font-size: 1.2rem;
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    
+    /* Blog posts grid */
+    .blog-posts {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+    
+    .blog-post {
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+        background-color: #fff;
+    }
+    
+    .blog-post:hover {
+        transform: translateY(-5px);
+    }
+    
+    .blog-post-thumbnail img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+    
+    .blog-post-content {
+        padding: 1.5rem;
+    }
+    
+    .blog-post-meta {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+        color: #7f8c8d;
+    }
+    
+    .blog-post-title {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        color: #2c3e50;
+    }
+    
+    .blog-post-excerpt {
+        color: #34495e;
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+    }
+    
+    .read-more {
+        display: inline-block;
+        color: #3498db;
+        font-weight: 600;
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+    
+    .read-more:hover {
+        color: #2980b9;
+    }
+    
+    /* Pagination styles */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        margin: 2rem 0;
+    }
+    
+    .pagination-prev, .pagination-next {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        background-color: #f5f7fa;
+        color: #2c3e50;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        margin: 0 0.5rem;
+    }
+    
+    .pagination-prev:hover, .pagination-next:hover {
+        background-color: #3498db;
+        color: #fff;
+    }
+    
+    .pagination-num {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #f5f7fa;
+        color: #2c3e50;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        margin: 0 0.3rem;
+    }
+    
+    .pagination-num:hover {
+        background-color: #3498db;
+        color: #fff;
+    }
+    
+    .pagination-current {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #3498db;
+        color: #fff;
+        margin: 0 0.3rem;
+    }
+    
+    .pagination-ellipsis {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        color: #7f8c8d;
+        margin: 0 0.3rem;
+    }
+    
+    .disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .no-posts-message {
+        text-align: center;
+        padding: 2rem;
+        color: #7f8c8d;
+        font-size: 1.2rem;
+    }
+    
+    /* Back to blog link */
+    .back-to-blog {
+        display: inline-flex;
+        align-items: center;
+        color: #3498db;
+        text-decoration: none;
+        font-weight: 600;
+        margin-bottom: 2rem;
+        transition: color 0.3s ease;
+    }
+    
+    .back-to-blog i {
+        margin-right: 0.5rem;
+    }
+    
+    .back-to-blog:hover {
+        color: #2980b9;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="blog-posts">
-    {% for post in posts.items %}
-    <div class="blog-post">
-        <div class="blog-post-thumbnail">
-            <img src="{{ url_for('static', filename=post.featured_image) if post.featured_image else url_for('static', filename='images/default-post.jpg') }}" alt="{{ post.title }}">
-        </div>
-        <div class="blog-post-content">
-            <div class="blog-post-meta">
-                <span class="blog-post-date">{{ post.created_at.strftime('%B %d, %Y') }}</span>
-                <span class="blog-post-category">{{ post.category.name }}</span>
-            </div>
-            <h3 class="blog-post-title">{{ post.title }}</h3>
-            <p class="blog-post-excerpt">{{ post.excerpt }}</p>
-            <a href="{{ url_for('blog.post', slug=post.slug) }}" class="read-more">Read More</a>
-        </div>
+<!-- Blog Tag Header -->
+<div class="blog-tag-header">
+    <div class="container">
+        <a href="{{ url_for('blog.index') }}" class="back-to-blog">
+            <i class="fas fa-arrow-left"></i> Back to Blog
+        </a>
+        <h1 class="blog-tag-title">Tag: {{ tag.name }}</h1>
+        <p class="blog-tag-description">Browse all articles tagged with {{ tag.name }}</p>
     </div>
-    {% endfor %}
 </div>
 
-<!-- Pagination -->
-{% if posts.pages > 1 %}
-<div class="pagination">
-    {% if posts.has_prev %}
-    <div class="pagination-item">
-        <a href="{{ url_for('blog.tag', slug=tag.slug, page=posts.prev_num) }}" class="pagination-link">
-            <i class="fas fa-chevron-left"></i>
-        </a>
-    </div>
-    {% endif %}
-    
-    {% for page_num in posts.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-        {% if page_num %}
-            {% if page_num == posts.page %}
-            <div class="pagination-item">
-                <span class="pagination-link active">{{ page_num }}</span>
-            </div>
-            {% else %}
-            <div class="pagination-item">
-                <a href="{{ url_for('blog.tag', slug=tag.slug, page=page_num) }}" class="pagination-link">{{ page_num }}</a>
-            </div>
-            {% endif %}
-        {% else %}
-        <div class="pagination-item">
-            <span class="pagination-ellipsis">...</span>
-        </div>
-        {% endif %}
-    {% endfor %}
-    
-    {% if posts.has_next %}
-    <div class="pagination-item">
-        <a href="{{ url_for('blog.tag', slug=tag.slug, page=posts.next_num) }}" class="pagination-link">
-            <i class="fas fa-chevron-right"></i>
-        </a>
-    </div>
-    {% endif %}
+<!-- Blog Posts using flexible component -->
+<div class="container">
+    {% with 
+        posts=posts.items,
+        pagination=posts,
+        show_pagination=true,
+        pagination_args={'slug': tag.slug},
+        section_title="",
+        show_view_all=false
+    %}
+        {% include 'includes/flexible_posts.html' %}
+    {% endwith %}
 </div>
-{% endif %}
 {% endblock %}
