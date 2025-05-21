@@ -237,8 +237,8 @@
     
     .blog-post-tag {
         display: inline-block;
-        background-color: #f5f7fa;
-        color: #7f8c8d;
+        background-color: #2980b9;
+        color: white;
         padding: 0.3rem 0.8rem;
         border-radius: 20px;
         margin-right: 0.5rem;
@@ -249,8 +249,8 @@
     }
     
     .blog-post-tag:hover {
-        background-color: #3498db;
-        color: #fff;
+        background-color: #00274c;
+        color: #ffcb05;
     }
     
     /* Category badge */
@@ -466,13 +466,7 @@
     </div>
     {% endif %}
 
-  
-    
-    <!-- Blog post content -->
-    <article class="blog-post-content">
-        {{ post.content|safe }}
-    </article>
-    
+
     <!-- Tags -->
     {% if post.tags %}
     <div class="blog-post-tags">
@@ -481,6 +475,13 @@
         {% endfor %}
     </div>
     {% endif %}
+  
+    
+    <!-- Blog post content -->
+    <article class="blog-post-content">
+        {{ post.content|safe }}
+    </article>
+    
     
     <!-- Comments section -->
     {% if post.comments_enabled %}
