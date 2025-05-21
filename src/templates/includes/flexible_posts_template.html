@@ -1,0 +1,71 @@
+<!-- Flexible Post Display Template -->
+<section class="posts-section">
+    <div class="container">
+        <!-- Optional section title -->
+        {% if section_title %}
+            <h2>{{ section_title }}</h2>
+        {% endif %}
+        
+        <!-- Post grid -->
+        <div class="blog-posts">
+            {% if posts %}
+                {% for post in posts %}
+                <div class="blog-post">
+                    <div class="blog-post-thumbnail">
+                        <img src="{{ url_for('static', filename=post.featured_image) if post.featured_image else url_for('static', filename='images/default-post.jpg') }}" alt="{{ post.title }}">
+                    </div>
+                    <div class="blog-post-content">
+                        <div class="blog-post-meta">
+                            <span class="blog-post-date">{{ post.created_at.strftime('%B %d, %Y') }}</span>
+                            <span class="blog-post-category">{{ post.category.name }}</span>
+                        </div>
+                        <h3 class="blog-post-title">{{ post.title }}</h3>
+                        <p class="blog-post-excerpt">{{ post.excerpt }}</p>
+                        <a href="{{ url_for('blog.post', slug=post.slug) }}" class="read-more">Read More</a>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="no-posts-message">
+                    <p>No posts found matching the criteria.</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Pagination controls -->
+        {% if show_pagination and pagination %}
+        <div class="pagination">
+            {% if pagination.has_prev %}
+                <a href="{{ url_for(request.endpoint, page=pagination.prev_num, **pagination_args) }}" class="pagination-prev">&laquo; Previous</a>
+            {% else %}
+                <span class="pagination-prev disabled">&laquo; Previous</span>
+            {% endif %}
+            
+            {% for page_num in pagination.iter_pages(left_edge=2, right_edge=2, left_current=1, right_current=1) %}
+                {% if page_num %}
+                    {% if page_num == pagination.page %}
+                        <span class="pagination-current">{{ page_num }}</span>
+                    {% else %}
+                        <a href="{{ url_for(request.endpoint, page=page_num, **pagination_args) }}" class="pagination-num">{{ page_num }}</a>
+                    {% endif %}
+                {% else %}
+                    <span class="pagination-ellipsis">…</span>
+                {% endif %}
+            {% endfor %}
+            
+            {% if pagination.has_next %}
+                <a href="{{ url_for(request.endpoint, page=pagination.next_num, **pagination_args) }}" class="pagination-next">Next &raquo;</a>
+            {% else %}
+                <span class="pagination-next disabled">Next &raquo;</span>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <!-- Optional CTA button -->
+        {% if show_view_all and view_all_url %}
+        <div class="text-center">
+            <a href="{{ view_all_url }}" class="cta-button">{{ view_all_text|default('View All Posts') }}</a>
+        </div>
+        {% endif %}
+    </div>
+</section>
