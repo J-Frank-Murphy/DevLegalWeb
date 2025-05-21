@@ -337,7 +337,7 @@ nav ul li a:hover::after {
 /* Newsletter Section */
 .newsletter {
     padding: 5rem 0;
-    background-color: var(--navy);
+    background-color: #00274c;
     color: var(--white);
 }
 
