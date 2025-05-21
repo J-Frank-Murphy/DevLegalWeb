@@ -11,7 +11,6 @@
     <link rel="icon" href="{{ url_for('static', filename='images/favicon.png', _external=True) }}">
     <link rel="icon" href="{{ url_for('static', filename='images/favicon-96x96.png', _external=True) }}" sizes="96x96">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/apple-touch-icon.png', _external=True) }}" sizes="180x180">
-
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -106,7 +105,7 @@
             }
             
             nav ul.active {
-                display: flex;
+                display: flex !important;
             }
             
             nav ul li {
@@ -123,11 +122,11 @@
     
     {% block content %}{% endblock %}
 
-<!-- About Section -->
-{% include 'includes/about.html' %}
+    <!-- About Section -->
+    {% include 'includes/about.html' %}
 
-<!-- Services Section -->
-{% include 'includes/services.html' %}
+    <!-- Services Section -->
+    {% include 'includes/services.html' %}
     
     {% include 'includes/newsletter.html' %}
     
@@ -138,77 +137,56 @@
     <!-- JavaScript for mobile menu toggle -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const menuToggle = document.querySelector('.mobile-menu-toggle');
-            const navMenu = document.querySelector('nav ul');
+            // Target the specific elements in your HTML structure
+            var menuToggle = document.querySelector('.mobile-menu-toggle');
+            var navElement = document.querySelector('header nav');
             
-            if (menuToggle && navMenu) {
-                menuToggle.addEventListener('click', function() {
-                    navMenu.classList.toggle('active');
-                    const isExpanded = menuToggle.getAttribute('aria-expanded') === 'true';
-                    menuToggle.setAttribute('aria-expanded', !isExpanded);
-                });
+            if (menuToggle && navElement) {
+                // Get the navigation list
+                var navList = navElement.querySelector('ul');
+                
+                if (navList) {
+                    // Add necessary CSS for mobile menu
+                    var style = document.createElement('style');
+                    style.textContent = `
+                        @media (max-width: 768px) {
+                            nav ul {
+                                display: none;
+                                position: absolute;
+                                top: 100%;
+                                left: 0;
+                                right: 0;
+                                background-color: white;
+                                box-shadow: 0 5px 10px rgba(0,0,0,0.1);
+                                z-index: 1000;
+                                padding: 1rem;
+                                flex-direction: column;
+                            }
+                            
+                            nav ul.active {
+                                display: flex !important;
+                            }
+                            
+                            nav ul li {
+                                margin: 0.5rem 0;
+                            }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                    
+                    // Add click event to toggle menu
+                    menuToggle.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        navList.classList.toggle('active');
+                        console.log('Menu toggled');
+                    });
+                    
+                    console.log('Mobile menu handler installed successfully');
+                }
             }
         });
     </script>
     
-    {% block additional_scripts %}
-<script>
-// Hamburger Menu Fix
-document.addEventListener('DOMContentLoaded', function() {
-  const menuToggle = document.querySelector('.mobile-menu-toggle');
-  const navMenu = document.querySelector('nav ul');
-  
-  if (menuToggle && navMenu) {
-    console.log('Adding click event to hamburger menu');
-    
-    menuToggle.addEventListener('click', function() {
-      navMenu.classList.toggle('active');
-      console.log('Menu toggled');
-    });
-  }
-});
-
-// Add the event listener immediately as well (in case DOMContentLoaded already fired)
-const menuToggle = document.querySelector('.mobile-menu-toggle');
-const navMenu = document.querySelector('nav ul');
-
-if (menuToggle && navMenu) {
-  console.log('Adding immediate click event to hamburger menu');
-  
-  menuToggle.addEventListener('click', function() {
-    navMenu.classList.toggle('active');
-    console.log('Menu toggled immediately');
-  });
-}
-
-    
-</script>
-    <script>
-      // Execute immediately and after DOM is loaded
-      function setupMobileMenu() {
-        var menuButton = document.querySelector('.mobile-menu-toggle');
-        var navMenu = document.querySelector('nav ul');
-        
-        if (menuButton && navMenu) {
-          menuButton.onclick = function(e) {
-            e.preventDefault();
-            if (navMenu.style.display === 'flex') {
-              navMenu.style.display = 'none';
-            } else {
-              navMenu.style.display = 'flex';
-            }
-            return false;
-          };
-        }
-      }
-      
-      // Run immediately
-      setupMobileMenu();
-      
-      // Also run after DOM is fully loaded
-      document.addEventListener('DOMContentLoaded', setupMobileMenu);
-    </script>
-    {% endblock %}
+    {% block additional_scripts %}{% endblock %}
 </body>
 </html>
-
