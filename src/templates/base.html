@@ -9,7 +9,7 @@
     <!-- Favicon - Multiple formats for cross-browser compatibility -->
     <link rel="icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32x32.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='images/favicon-16x16.png') }}">
+    <link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static', filename='images/favicon.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
     
     <!-- Fonts -->
@@ -150,6 +150,39 @@
         });
     </script>
     
-    {% block additional_scripts %}{% endblock %}
+    {% block additional_scripts %}
+<script>
+// Hamburger Menu Fix
+document.addEventListener('DOMContentLoaded', function() {
+  const menuToggle = document.querySelector('.mobile-menu-toggle');
+  const navMenu = document.querySelector('nav ul');
+  
+  if (menuToggle && navMenu) {
+    console.log('Adding click event to hamburger menu');
+    
+    menuToggle.addEventListener('click', function() {
+      navMenu.classList.toggle('active');
+      console.log('Menu toggled');
+    });
+  }
+});
+
+// Add the event listener immediately as well (in case DOMContentLoaded already fired)
+const menuToggle = document.querySelector('.mobile-menu-toggle');
+const navMenu = document.querySelector('nav ul');
+
+if (menuToggle && navMenu) {
+  console.log('Adding immediate click event to hamburger menu');
+  
+  menuToggle.addEventListener('click', function() {
+    navMenu.classList.toggle('active');
+    console.log('Menu toggled immediately');
+  });
+}
+
+    
+</script>    
+    {% endblock %}
 </body>
 </html>
+
