@@ -6,11 +6,11 @@
             <h1 style="text-align: center; padding-top: 5rem; font-size: 2.2rem">{{ section_title }}</h1>
         {% endif %}
         
-        <!-- Post grid -->
-        <div class="blog-posts">
+        <!-- Post grid with aggressive styling to ensure consistent width -->
+        <div class="blog-posts" style="display: grid !important; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)) !important; gap: 2rem !important; margin-bottom: 3rem !important;">
             {% if posts %}
                 {% for post in posts %}
-                <div class="blog-post">
+                <div class="blog-post" style="width: 100% !important; max-width: none !important;">
                     <div class="blog-post-thumbnail">
                         <img src="{{ url_for('static', filename=post.featured_image) if post.featured_image else url_for('static', filename='images/default-post.jpg') }}" alt="{{ post.title }}">
                     </div>
@@ -31,6 +31,53 @@
                 </div>
             {% endif %}
         </div>
+        
+        <!-- Aggressive CSS to override any conflicting styles -->
+        <style>
+            /* Target both homepage and blog page containers with high specificity */
+            html body .container .blog-posts,
+            html body .posts-section .container .blog-posts,
+            html body .blog-posts,
+            html body .posts-grid,
+            html body .latest-posts .posts-grid,
+            html body .container .posts-grid {
+                display: grid !important;
+                grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)) !important;
+                gap: 2rem !important;
+                margin-bottom: 3rem !important;
+            }
+            
+            /* Ensure blog post cards take full width of their grid cell */
+            html body .blog-post,
+            html body .post-card {
+                width: 100% !important;
+                max-width: none !important;
+                box-sizing: border-box !important;
+            }
+            
+            /* Responsive adjustments with high specificity */
+            @media (max-width: 768px) {
+                html body .container .blog-posts,
+                html body .posts-section .container .blog-posts,
+                html body .blog-posts,
+                html body .posts-grid,
+                html body .latest-posts .posts-grid,
+                html body .container .posts-grid {
+                    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
+                }
+            }
+            
+            @media (max-width: 480px) {
+                html body .container .blog-posts,
+                html body .posts-section .container .blog-posts,
+                html body .blog-posts,
+                html body .posts-grid,
+                html body .latest-posts .posts-grid,
+                html body .container .posts-grid {
+                    grid-template-columns: 1fr !important;
+                }
+            }
+        </style>
         
         <!-- Pagination controls -->
         {% if show_pagination and pagination %}
@@ -71,38 +118,24 @@
     </div>
 </section>
 
-<style>
-/* Override for blog post cards to ensure consistent width everywhere */
-.blog-posts {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)) !important;
-    gap: 2rem;
-    margin-bottom: 3rem;
-}
-
-/* Ensure consistent styling for all blog post cards */
-.blog-post {
-    background-color: var(--white, #FFFFFF);
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-    transition: transform 0.3s ease;
-}
-
-.blog-post:hover {
-    transform: translateY(-5px);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .blog-posts {
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
-    }
-}
-
-@media (max-width: 480px) {
-    .blog-posts {
-        grid-template-columns: 1fr !important;
-    }
-}
-</style>
+<!-- JavaScript to ensure consistent widths after page load -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Force consistent grid layout after page load
+    var blogPostsContainers = document.querySelectorAll('.blog-posts, .posts-grid');
+    blogPostsContainers.forEach(function(container) {
+        container.style.display = 'grid';
+        container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(350px, 1fr))';
+        container.style.gap = '2rem';
+        container.style.marginBottom = '3rem';
+    });
+    
+    // Force blog post cards to take full width
+    var blogPosts = document.querySelectorAll('.blog-post, .post-card');
+    blogPosts.forEach(function(post) {
+        post.style.width = '100%';
+        post.style.maxWidth = 'none';
+        post.style.boxSizing = 'border-box';
+    });
+});
+</script>
