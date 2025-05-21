@@ -24,16 +24,12 @@ def save_image(file):
         filename = secure_filename(file.filename)
         unique_filename = f"{uuid.uuid4().hex}_{filename}"
         
-        # Create uploads directory if it doesn't exist
-        uploads_dir = os.path.join(current_app.static_folder, 'uploads')
-        os.makedirs(uploads_dir, exist_ok=True)
-        
-        # Save the file
-        file_path = os.path.join(uploads_dir, unique_filename)
+        # Save the file to the configured upload folder
+        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
         file.save(file_path)
         
-        # Return the relative path for database storage
-        return f'uploads/{unique_filename}'
+        # Return the relative path using the configured URL path
+        return f"{current_app.config['UPLOADS_URL_PATH'].strip('/')}/{unique_filename}"
     
     return None
 
@@ -55,7 +51,7 @@ def upload_image():
             # Return the URL for the uploaded image in Quill format
             return jsonify({
                 'success': True,
-                'url': url_for('static', filename=file_path)
+                'url': url_for('static', filename=file_path) if file_path.startswith('static/') else file_path
             })
     
     return jsonify({'error': 'Invalid file type'}), 400
