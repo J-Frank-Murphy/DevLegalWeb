@@ -31,10 +31,22 @@
             <textarea id="excerpt" name="excerpt" rows="3">{{ post.excerpt if post else '' }}</textarea>
         </div>
         
+        <div class="form-group format-toggle">
+            <label>Content Format:</label>
+            <div class="toggle-container">
+                <input type="radio" id="format_html" name="content_format" value="html" {% if not post or not post.content_format or post.content_format == 'html' %}checked{% endif %}>
+                <label for="format_html">HTML</label>
+                
+                <input type="radio" id="format_markdown" name="content_format" value="markdown" {% if post and post.content_format == 'markdown' %}checked{% endif %}>
+                <label for="format_markdown">Markdown</label>
+            </div>
+            <small class="format-hint html-hint {% if post and post.content_format == 'markdown' %}hidden{% endif %}">HTML markup is allowed</small>
+            <small class="format-hint markdown-hint {% if not post or not post.content_format or post.content_format == 'html' %}hidden{% endif %}">Markdown formatting will be converted to HTML when displayed</small>
+        </div>
+        
         <div class="form-group">
             <label for="content">Content</label>
             <textarea id="content" name="content" rows="15">{{ post.content if post else '' }}</textarea>
-            <small>HTML markup is allowed</small>
         </div>
         
         <div class="form-group">
@@ -93,6 +105,28 @@
         </div>
     </form>
 </div>
+
+<style>
+    .format-toggle {
+        margin-bottom: 10px;
+    }
+    
+    .toggle-container {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 5px;
+    }
+    
+    .format-hint {
+        display: block;
+        font-size: 0.8em;
+        color: #666;
+    }
+    
+    .hidden {
+        display: none;
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}
@@ -113,6 +147,28 @@
                         .replace(/\s+/g, '-')
                         .replace(/-+/g, '-')
                         .trim();
+                }
+            });
+        }
+        
+        // Format toggle functionality
+        const htmlRadio = document.getElementById('format_html');
+        const markdownRadio = document.getElementById('format_markdown');
+        const htmlHint = document.querySelector('.html-hint');
+        const markdownHint = document.querySelector('.markdown-hint');
+        
+        if (htmlRadio && markdownRadio) {
+            htmlRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    htmlHint.classList.remove('hidden');
+                    markdownHint.classList.add('hidden');
+                }
+            });
+            
+            markdownRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    markdownHint.classList.remove('hidden');
+                    htmlHint.classList.add('hidden');
                 }
             });
         }
