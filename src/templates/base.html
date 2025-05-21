@@ -181,7 +181,32 @@ if (menuToggle && navMenu) {
 }
 
     
-</script>    
+</script>
+    <script>
+      // Execute immediately and after DOM is loaded
+      function setupMobileMenu() {
+        var menuButton = document.querySelector('.mobile-menu-toggle');
+        var navMenu = document.querySelector('nav ul');
+        
+        if (menuButton && navMenu) {
+          menuButton.onclick = function(e) {
+            e.preventDefault();
+            if (navMenu.style.display === 'flex') {
+              navMenu.style.display = 'none';
+            } else {
+              navMenu.style.display = 'flex';
+            }
+            return false;
+          };
+        }
+      }
+      
+      // Run immediately
+      setupMobileMenu();
+      
+      // Also run after DOM is fully loaded
+      document.addEventListener('DOMContentLoaded', setupMobileMenu);
+    </script>
     {% endblock %}
 </body>
 </html>
