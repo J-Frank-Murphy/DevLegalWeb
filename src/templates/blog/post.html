@@ -4,21 +4,19 @@
 
 {% block additional_styles %}
 <style>
-
-    
     /* Content container */
     .blog-post-container {
         max-width: 700px;
         margin: 0 auto;
         padding: 0 20px;
     }
-    
+
     /* Header section */
     .blog-post-header {
         margin: 3rem auto 2rem;
         text-align: center;
     }
-    
+
     .blog-post-title {
         font-size: 2.5rem;
         font-weight: 700;
@@ -26,14 +24,14 @@
         margin-bottom: 1rem;
         color: #2c3e50;
     }
-    
+
     .blog-post-subtitle {
         font-size: 1.25rem;
         color: #555;
         margin-bottom: 2rem;
         line-height: 1.4;
     }
-    
+
     /* Author section */
     .blog-post-author {
         display: flex;
@@ -41,7 +39,7 @@
         justify-content: center;
         margin-bottom: 2rem;
     }
-    
+
     .author-image {
         width: 50px;
         height: 50px;
@@ -49,27 +47,27 @@
         object-fit: cover;
         margin-right: 1rem;
     }
-    
+
     .author-info {
         text-align: left;
     }
-    
+
     .author-name {
         font-weight: 600;
         color: #2c3e50;
         text-decoration: none;
         font-size: 1rem;
     }
-    
+
     .author-name:hover {
         text-decoration: underline;
     }
-    
+
     .post-date {
         font-size: 0.9rem;
         color: #7f8c8d;
     }
-    
+
     /* Social sharing */
     .blog-post-social {
         display: flex;
@@ -79,12 +77,12 @@
         padding-bottom: 1rem;
         border-bottom: 1px solid #eee;
     }
-    
+
     .social-actions {
         display: flex;
         align-items: center;
     }
-    
+
     .social-button {
         display: flex;
         align-items: center;
@@ -98,12 +96,12 @@
         text-decoration: none;
         transition: all 0.2s ease;
     }
-    
+
     .social-button:hover {
         background-color: #e0e6ed;
         color: #2c3e50;
     }
-    
+
     .share-button {
         display: flex;
         align-items: center;
@@ -116,44 +114,44 @@
         font-size: 0.9rem;
         transition: all 0.2s ease;
     }
-    
+
     .share-button:hover {
         background-color: #e0e6ed;
     }
-    
+
     .share-button i {
         margin-right: 0.5rem;
     }
-    
+
     /* Featured image */
     .blog-post-featured-image-container {
         margin: 2rem 0;
         position: relative;
     }
-    
+
     .blog-post-featured-image {
         width: 100%;
         height: auto;
         border-radius: 8px;
         display: block;
     }
-    
+
     .image-caption {
         margin-top: 0.5rem;
         font-size: 0.85rem;
         color: #7f8c8d;
         text-align: center;
     }
-    
+
     .image-caption a {
         color: #3498db;
         text-decoration: none;
     }
-    
+
     .image-caption a:hover {
         text-decoration: underline;
     }
-    
+
     /* Content styling */
     .blog-post-content {
         margin: 2rem 0;
@@ -161,43 +159,44 @@
         line-height: 1.8;
         color: #333;
     }
-    
+
     .blog-post-content p {
         margin-bottom: 1.5rem;
     }
-    
+
     .blog-post-content h2 {
         font-size: 1.8rem;
         font-weight: 700;
         margin: 2.5rem 0 1rem;
         color: #2c3e50;
     }
-    
+
     .blog-post-content h3 {
         font-size: 1.5rem;
         font-weight: 700;
         margin: 2rem 0 1rem;
         color: #2c3e50;
     }
-    
-    .blog-post-content ul, .blog-post-content ol {
+
+    .blog-post-content ul,
+    .blog-post-content ol {
         margin-bottom: 1.5rem;
         padding-left: 2rem;
     }
-    
+
     .blog-post-content li {
         margin-bottom: 0.75rem;
     }
-    
+
     .blog-post-content a {
         color: #3498db;
         text-decoration: none;
     }
-    
+
     .blog-post-content a:hover {
         text-decoration: underline;
     }
-    
+
     .blog-post-content blockquote {
         border-left: 4px solid #3498db;
         padding: 0.5rem 0 0.5rem 1.5rem;
@@ -206,7 +205,7 @@
         font-style: italic;
         background-color: #f9f9f9;
     }
-    
+
     .blog-post-content code {
         background-color: #f5f7fa;
         padding: 0.2rem 0.4rem;
@@ -214,7 +213,7 @@
         font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
         font-size: 0.9em;
     }
-    
+
     .blog-post-content pre {
         background-color: #f5f7fa;
         padding: 1rem;
@@ -222,19 +221,19 @@
         overflow-x: auto;
         margin-bottom: 1.5rem;
     }
-    
+
     .blog-post-content pre code {
         background-color: transparent;
         padding: 0;
     }
-    
+
     /* Tags */
     .blog-post-tags {
         display: flex;
         flex-wrap: wrap;
         margin: 2rem 0;
     }
-    
+
     .blog-post-tag {
         display: inline-block;
         background-color: #2980b9;
@@ -247,12 +246,12 @@
         text-decoration: none;
         transition: all 0.2s ease;
     }
-    
+
     .blog-post-tag:hover {
         background-color: #00274c;
         color: #ffcb05;
     }
-    
+
     /* Category badge */
     .category-badge {
         display: inline-block;
@@ -265,77 +264,78 @@
         text-decoration: none;
         margin-bottom: 1rem;
     }
-    
+
     .category-badge:hover {
         background-color: #2980b9;
         color: white;
     }
-    
+
     /* Comments section */
     .comments-section {
         margin: 3rem 0;
         padding-top: 2rem;
         border-top: 1px solid #eee;
     }
-    
+
     .comments-section h3 {
         font-size: 1.5rem;
         margin-bottom: 1.5rem;
         color: #2c3e50;
     }
-    
+
     .comment {
         background-color: #f9f9f9;
         border-radius: 8px;
         padding: 1.5rem;
         margin-bottom: 1.5rem;
     }
-    
+
     .comment-meta {
         display: flex;
         justify-content: space-between;
         margin-bottom: 0.5rem;
     }
-    
+
     .comment-author {
         font-weight: 600;
         color: #2c3e50;
     }
-    
+
     .comment-date {
         font-size: 0.9rem;
         color: #7f8c8d;
     }
-    
+
     .comment-content {
         color: #34495e;
         line-height: 1.6;
     }
-    
+
     .comment-form {
         background-color: #f9f9f9;
         border-radius: 8px;
         padding: 1.5rem;
     }
-    
+
     .comment-form h4 {
         font-size: 1.3rem;
         margin-bottom: 1.5rem;
         color: #2c3e50;
     }
-    
+
     .form-group {
         margin-bottom: 1.5rem;
     }
-    
+
     .form-group label {
         display: block;
         margin-bottom: 0.5rem;
         font-weight: 600;
         color: #2c3e50;
     }
-    
-    .form-group input, .form-group textarea {
+
+    .form-group input,
+    .form-group textarea {
         width: 100%;
         padding: 0.8rem;
         border: 1px solid #ddd;
@@ -343,12 +343,12 @@
         font-family: inherit;
         font-size: inherit;
     }
-    
+
     .form-group textarea {
         min-height: 150px;
         resize: vertical;
     }
-    
+
     .submit-button {
         background-color: #3498db;
         color: #fff;
@@ -359,11 +359,11 @@
         cursor: pointer;
         transition: background-color 0.3s ease;
     }
-    
+
     .submit-button:hover {
         background-color: #2980b9;
     }
-    
+
     /* Back to blog link */
     .back-to-blog {
         display: inline-flex;
@@ -374,15 +374,15 @@
         margin-bottom: 2rem;
         transition: color 0.3s ease;
     }
-    
+
     .back-to-blog i {
         margin-right: 0.5rem;
     }
-    
+
     .back-to-blog:hover {
         color: #2980b9;
     }
-    
+
     /* Table of contents button */
     .toc-button {
         position: fixed;
@@ -401,26 +401,26 @@
         z-index: 100;
         transition: all 0.2s ease;
     }
-    
+
     .toc-button:hover {
         background-color: #2980b9;
         transform: scale(1.05);
     }
-    
+
     /* Responsive styles */
     @media (max-width: 768px) {
         .blog-post-title {
             font-size: 2rem;
         }
-        
+
         .blog-post-subtitle {
             font-size: 1.1rem;
         }
-        
+
         .blog-post-content {
             font-size: 1rem;
         }
-        
+
         .toc-button {
             bottom: 1rem;
             right: 1rem;
@@ -433,39 +433,45 @@
 
 {% block content %}
 <div class="blog-post-container">
-
-    
     <!-- Blog Post Header -->
     <div class="blog-post-header">
         <!-- Category badge -->
         <a href="{{ url_for('blog.category', slug=post.category.slug) }}" class="category-badge">
             {{ post.category.name }}
         </a>
-        
+
         <!-- Post title -->
         <h1 class="blog-post-title">{{ post.title }}</h1>
+
         <!-- Author info -->
         <div class="blog-post-author">
-             <div class="author-info">
+            <div class="author-info">
                 <a href="#" class="author-name">{{ post.author.name if post.author else 'Sabir Ibrahim' }}</a>
                 <div class="post-date">{{ post.created_at.strftime('%B %d, %Y') }}</div>
             </div>
-        </div>  
-        <!-- Post subtitle/description -->
-        <div class="blog-post-subtitle">
-            {{ post.excerpt }}
         </div>
-        
 
+        <!-- Post subtitle -->
+        {% if post.excerpt %}
+        <div class="blog-post-subtitle">{{ post.excerpt }}</div>
+        {% endif %}
     </div>
-    
-    <!-- Featured image with caption -->
+
+    <!-- Featured image -->
     {% if post.featured_image %}
     <div class="blog-post-featured-image-container">
         <img src="{{ url_for('static', filename=post.featured_image) }}" alt="{{ post.title }}" class="blog-post-featured-image">
     </div>
     {% endif %}
 
+    <!-- Post content -->
+    <div class="blog-post-content">
+        {% if post.content_format == 'markdown' %}
+            {{ post.html_content|safe }}
+        {% else %}
+            {{ post.content|safe }}
+        {% endif %}
+    </div>
 
     <!-- Tags -->
     {% if post.tags %}
@@ -475,21 +481,15 @@
         {% endfor %}
     </div>
     {% endif %}
-  
-    
-    <!-- Blog post content -->
-    <article class="blog-post-content">
-        {{ post.content|safe }}
-    </article>
-    
-    
+
     <!-- Comments section -->
     {% if post.comments_enabled %}
-    <div class="comments-section" id="comments">
-        <h3>Comments</h3>
-        
-        {% if post.approved_comments %}
-        {% for comment in post.approved_comments %}
+    <div class="comments-section">
+        <h3>Comments ({{ post.comments|length }})</h3>
+
+        {% if post.comments %}
+        {% for comment in post.comments %}
+        {% if comment.approved %}
         <div class="comment">
             <div class="comment-meta">
                 <span class="comment-author">{{ comment.name }}</span>
@@ -499,14 +499,17 @@
                 {{ comment.content }}
             </div>
         </div>
+        {% endif %}
         {% endfor %}
         {% else %}
         <p>No comments yet. Be the first to comment!</p>
         {% endif %}
-        
+
+        <!-- Comment form -->
         <div class="comment-form">
             <h4>Leave a Comment</h4>
-            <form action="{{ url_for('blog.add_comment', slug=post.slug) }}" method="POST">
+            <form method="POST" action="{{ url_for('blog.add_comment', post_id=post.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                 <div class="form-group">
                     <label for="name">Name</label>
                     <input type="text" id="name" name="name" required>
@@ -524,6 +527,10 @@
         </div>
     </div>
     {% endif %}
-    
+
+    <!-- Back to blog link -->
+    <a href="{{ url_for('blog.index') }}" class="back-to-blog">
+        <i class="fas fa-arrow-left"></i> Back to Blog
+    </a>
 </div>
 {% endblock %}
