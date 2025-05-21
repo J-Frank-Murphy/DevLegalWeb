@@ -60,7 +60,12 @@
         <!-- Optional CTA button -->
         {% if show_view_all and view_all_url %}
         <div class="text-center">
-            <a href="{{ view_all_url }}" class="cta-button">{{ view_all_text|default('View All Posts') }}</a>
+            <a 
+            href="{{ view_all_url }}"
+            class="cta-button"
+            style="padding-bottom: 5rem"
+            >
+            {{ view_all_text|default('View All Posts') }}</a>
         </div>
         {% endif %}
     </div>
