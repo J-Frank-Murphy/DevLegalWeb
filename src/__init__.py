@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
@@ -71,7 +71,20 @@ def configure_app(app, config=None):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # Upload configuration
-    app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
+    if os.path.exists('/opt/render/persistent-uploads'):
+        # Use persistent disk on Render
+        app.config['UPLOAD_FOLDER'] = '/opt/render/persistent-uploads'
+        app.config['UPLOADS_URL_PATH'] = '/uploads'  # URL path for serving files
+        
+        # Create a route to serve files from persistent disk
+        @app.route('/uploads/<path:filename>')
+        def uploaded_file(filename):
+            return send_from_directory('/opt/render/persistent-uploads', filename)
+    else:
+        # Local development - use static folder
+        app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
+        app.config['UPLOADS_URL_PATH'] = '/static/uploads'  # URL path for static folder
+    
     app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
