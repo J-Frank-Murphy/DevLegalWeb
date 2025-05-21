@@ -41,15 +41,11 @@
                 <span class="pagination-prev disabled">&laquo; Previous</span>
             {% endif %}
             
-            {% for page_num in pagination.iter_pages(left_edge=2, right_edge=2, left_current=1, right_current=1) %}
-                {% if page_num %}
-                    {% if page_num == pagination.page %}
-                        <span class="pagination-current">{{ page_num }}</span>
-                    {% else %}
-                        <a href="{{ url_for(request.endpoint, page=page_num, **pagination_args) }}" class="pagination-num">{{ page_num }}</a>
-                    {% endif %}
+            {% for page_num in range(1, pagination.pages + 1) %}
+                {% if page_num == pagination.page %}
+                    <span class="pagination-current">{{ page_num }}</span>
                 {% else %}
-                    <span class="pagination-ellipsis">…</span>
+                    <a href="{{ url_for(request.endpoint, page=page_num, **pagination_args) }}" class="pagination-num">{{ page_num }}</a>
                 {% endif %}
             {% endfor %}
             
