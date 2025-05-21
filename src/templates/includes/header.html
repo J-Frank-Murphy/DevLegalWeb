@@ -6,23 +6,15 @@
                 <img src="{{ url_for('static', filename='images/new/logo-horizontal.png') }}" alt="Dev Legal Logo">
             </a>
         </div>
-        <div class ="topnav">
-        <nav>
-            <ul>
-                <div id="myLinks">
+<div class="topnav" id="myTopnav">
                 <li><a href="#about">About</a></li>
                 <li><a href="#services">Services</a></li>
                 <li><a href="#contact">Contact</a></li>
                 <li><a href="{{ url_for('blog.index') }}">Blog</a></li>
                 <li><a href="{{ url_for('main.index') }}">Home</a></li>
-                </div>
-            </ul>
-        </nav>
-
-  <!-- "Hamburger menu" / "Bar icon" to toggle the navigation links -->
   <a href="javascript:void(0);" class="icon" onclick="myFunction()">
     <i class="fa fa-bars"></i>
   </a>
-                    </div>
+</div>
     </div>
 </header>
