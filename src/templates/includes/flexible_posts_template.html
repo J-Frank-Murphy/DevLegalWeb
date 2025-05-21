@@ -72,10 +72,10 @@
 </section>
 
 <style>
-/* Override for blog post cards to ensure narrow width everywhere */
+/* Override for blog post cards to ensure consistent width everywhere */
 .blog-posts {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)) !important;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)) !important;
     gap: 2rem;
     margin-bottom: 3rem;
 }
@@ -96,7 +96,7 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .blog-posts {
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)) !important;
     }
 }
 
