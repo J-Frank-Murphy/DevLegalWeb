@@ -80,6 +80,15 @@ def configure_app(app, config=None):
         @app.route('/uploads/<path:filename>')
         def uploaded_file(filename):
             return send_from_directory('/opt/render/persistent-uploads', filename)
+            
+        # Handle legacy paths that might be in the database
+        @app.route('/static/uploads/<path:filename>')
+        def legacy_uploaded_file(filename):
+            # First try to serve from persistent disk
+            if os.path.exists(os.path.join('/opt/render/persistent-uploads', filename)):
+                return send_from_directory('/opt/render/persistent-uploads', filename)
+            # Fall back to static folder
+            return send_from_directory(os.path.join(app.static_folder, 'uploads'), filename)
     else:
         # Local development - use static folder
         app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
