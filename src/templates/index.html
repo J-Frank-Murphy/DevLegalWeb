@@ -6,25 +6,15 @@
 
 <!-- Latest Blog Posts Section -->
 {% if latest_posts %}
-{% include 'includes/flexible_posts_template.html' %}
-{% endif %}
-
-@app.route('/')
-def index():
-    # Get just the latest 3 posts for homepage
-    latest_posts = Post.query.filter_by(published=True).order_by(
-        Post.created_at.desc()
-    ).limit(3).all()
-    
-    return render_template(
-        'index.html',
+    {% with 
         posts=latest_posts,
-        show_pagination=False,
         section_title="Latest from Our Blog",
-        show_view_all=True,
+        show_pagination=false,
+        show_view_all=true,
         view_all_url=url_for('blog.index'),
         view_all_text="View All Posts"
-    )
-
-
+    %}
+        {% include 'includes/flexible_posts.html' %}
+    {% endwith %}
+{% endif %}
 {% endblock %}
