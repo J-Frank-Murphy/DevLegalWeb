@@ -24,12 +24,16 @@ def save_image(file):
         filename = secure_filename(file.filename)
         unique_filename = f"{uuid.uuid4().hex}_{filename}"
         
-        # Save the file to the configured upload folder
-        file_path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_filename)
+        # Create uploads directory if it doesn't exist
+        uploads_dir = os.path.join(current_app.static_folder, 'uploads')
+        os.makedirs(uploads_dir, exist_ok=True)
+        
+        # Save the file
+        file_path = os.path.join(uploads_dir, unique_filename)
         file.save(file_path)
         
-        # Return the relative path using the configured URL path
-        return f"{current_app.config['UPLOADS_URL_PATH'].strip('/')}/{unique_filename}"
+        # Return the relative path for database storage
+        return f'uploads/{unique_filename}'
     
     return None
 
@@ -51,7 +55,7 @@ def upload_image():
             # Return the URL for the uploaded image in Quill format
             return jsonify({
                 'success': True,
-                'url': url_for('static', filename=file_path) if file_path.startswith('static/') else file_path
+                'url': url_for('static', filename=file_path)
             })
     
     return jsonify({'error': 'Invalid file type'}), 400
@@ -147,6 +151,7 @@ def new_post():
         featured_image_url = request.form.get('featured_image_url')
         published = 'published' in request.form
         comments_enabled = 'comments_enabled' in request.form
+        post_date = request.form.get('post_date')
         
         # Validate required fields
         if not title or not content or not category_id:
@@ -176,6 +181,13 @@ def new_post():
             published=published,
             comments_enabled=comments_enabled
         )
+        
+        # Set custom created_at date if provided
+        if post_date:
+            try:
+                post.created_at = datetime.strptime(post_date, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                flash('Invalid date format. Using current date instead.', 'warning')
         
         # Add tags
         for tag_id in tag_ids:
@@ -211,6 +223,14 @@ def edit_post(post_id):
         featured_image_url = request.form.get('featured_image_url')
         post.published = 'published' in request.form
         post.comments_enabled = 'comments_enabled' in request.form
+        post_date = request.form.get('post_date')
+        
+        # Update created_at date if provided
+        if post_date:
+            try:
+                post.created_at = datetime.strptime(post_date, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                flash('Invalid date format. Original date retained.', 'warning')
         
         # Handle featured image (file upload takes precedence over URL)
         if 'featured_image_file' in request.files:
