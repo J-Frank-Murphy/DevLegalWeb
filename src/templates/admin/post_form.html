@@ -55,7 +55,7 @@
             <div class="content-image-upload">
                 <div class="upload-container">
                     <input type="file" id="content_image_file" accept="image/*">
-                    <button type="button" id="insert_content_image" class="btn btn-secondary" disabled>Insert Image at Cursor</button>
+                    <button type="button" id="insert_content_image" class="btn btn-secondary">Insert Image at Cursor</button>
                 </div>
                 <div id="content_image_preview" class="image-preview">
                     <!-- Preview will appear here -->
@@ -241,6 +241,11 @@
         let uploadedImageUrl = '';
         let uploadedImageFilename = '';
         
+        // Initially disable the insert button until an image is uploaded
+        if (insertButton) {
+            insertButton.disabled = true;
+        }
+        
         // Handle file selection
         if (contentImageInput) {
             contentImageInput.addEventListener('change', function() {
@@ -256,7 +261,11 @@
                     
                     // Clear previous preview
                     previewContainer.innerHTML = '<p>Uploading...</p>';
-                    insertButton.disabled = true;
+                    
+                    // Ensure insert button is disabled during upload
+                    if (insertButton) {
+                        insertButton.disabled = true;
+                    }
                     
                     console.log("Uploading file...");
                     
@@ -286,8 +295,10 @@
                             `;
                             
                             // Enable insert button
-                            insertButton.disabled = false;
-                            console.log("Insert button enabled");
+                            if (insertButton) {
+                                insertButton.disabled = false;
+                                console.log("Insert button enabled");
+                            }
                         } else {
                             console.error("Upload failed:", data.error || "Unknown error");
                             previewContainer.innerHTML = '<p>Upload failed. Please try again.</p>';
@@ -351,7 +362,7 @@
                 // Reset the file input for next upload
                 contentImageInput.value = '';
                 
-                // Keep the preview but disable the insert button until next upload
+                // Disable the insert button until next upload
                 insertButton.disabled = true;
             });
         }
