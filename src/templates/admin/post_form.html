@@ -171,8 +171,14 @@
 {% block scripts %}
 {{ super() }}
 <script>
-    // Auto-generate slug from title
+    // Auto-generate slug from title and setup other functionality immediately
     document.addEventListener('DOMContentLoaded', function() {
+        setupSlugGeneration();
+        setupFormatToggle();
+        setupContentImageUpload();
+    });
+    
+    function setupSlugGeneration() {
         const titleInput = document.getElementById('title');
         const slugInput = document.getElementById('slug');
         
@@ -189,8 +195,9 @@
                 }
             });
         }
-        
-        // Format toggle functionality
+    }
+    
+    function setupFormatToggle() {
         const htmlRadio = document.getElementById('format_html');
         const markdownRadio = document.getElementById('format_markdown');
         const htmlHint = document.querySelector('.html-hint');
@@ -211,12 +218,12 @@
                 }
             });
         }
-        
-        // Content image upload functionality
-        setupContentImageUpload();
-    });
+    }
     
     function setupContentImageUpload() {
+        console.log("Setting up content image upload...");
+        
+        // Get DOM elements
         const contentImageInput = document.getElementById('content_image_file');
         const insertButton = document.getElementById('insert_content_image');
         const previewContainer = document.getElementById('content_image_preview');
@@ -224,92 +231,140 @@
         const htmlRadio = document.getElementById('format_html');
         const markdownRadio = document.getElementById('format_markdown');
         
+        // Log elements to verify they're found
+        console.log("Content image input:", contentImageInput);
+        console.log("Insert button:", insertButton);
+        console.log("Preview container:", previewContainer);
+        console.log("Content textarea:", contentTextarea);
+        
+        // Variables to store uploaded image info
         let uploadedImageUrl = '';
         let uploadedImageFilename = '';
         
         // Handle file selection
-        contentImageInput.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const file = this.files[0];
+        if (contentImageInput) {
+            contentImageInput.addEventListener('change', function() {
+                console.log("File input changed");
                 
-                // Create a FormData object
-                const formData = new FormData();
-                formData.append('file', file);
-                
-                // Clear previous preview
-                previewContainer.innerHTML = '<p>Uploading...</p>';
-                insertButton.disabled = true;
-                
-                // Use the existing upload endpoint (same as featured image)
-                fetch('/admin/upload-image', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Store the uploaded image URL
-                        uploadedImageUrl = data.url;
-                        uploadedImageFilename = file.name;
+                if (this.files && this.files[0]) {
+                    const file = this.files[0];
+                    console.log("Selected file:", file.name);
+                    
+                    // Create a FormData object
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    // Clear previous preview
+                    previewContainer.innerHTML = '<p>Uploading...</p>';
+                    insertButton.disabled = true;
+                    
+                    console.log("Uploading file...");
+                    
+                    // Use the existing upload endpoint (same as featured image)
+                    fetch('/admin/upload-image', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => {
+                        console.log("Upload response received");
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log("Upload response data:", data);
                         
-                        // Show preview
-                        previewContainer.innerHTML = `
-                            <img src="${uploadedImageUrl}" alt="${file.name}">
-                            <p>${file.name}</p>
-                        `;
-                        
-                        // Enable insert button
-                        insertButton.disabled = false;
-                    } else {
+                        if (data.success) {
+                            // Store the uploaded image URL
+                            uploadedImageUrl = data.url;
+                            uploadedImageFilename = file.name;
+                            
+                            console.log("Image uploaded successfully:", uploadedImageUrl);
+                            
+                            // Show preview
+                            previewContainer.innerHTML = `
+                                <img src="${uploadedImageUrl}" alt="${file.name}">
+                                <p>${file.name}</p>
+                            `;
+                            
+                            // Enable insert button
+                            insertButton.disabled = false;
+                            console.log("Insert button enabled");
+                        } else {
+                            console.error("Upload failed:", data.error || "Unknown error");
+                            previewContainer.innerHTML = '<p>Upload failed. Please try again.</p>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error uploading image:', error);
                         previewContainer.innerHTML = '<p>Upload failed. Please try again.</p>';
-                    }
-                })
-                .catch(error => {
-                    console.error('Error uploading image:', error);
-                    previewContainer.innerHTML = '<p>Upload failed. Please try again.</p>';
-                });
-            }
-        });
+                    });
+                }
+            });
+        }
         
         // Handle insert button click
-        insertButton.addEventListener('click', function() {
-            if (!uploadedImageUrl || !contentTextarea) return;
+        if (insertButton) {
+            console.log("Adding click event listener to insert button");
             
-            // Determine if we're in HTML or Markdown mode based on the radio buttons
-            const isHtmlMode = htmlRadio.checked;
-            
-            let imageCode;
-            if (isHtmlMode) {
-                // HTML format
-                imageCode = `<img src="${uploadedImageUrl}" alt="${uploadedImageFilename}" class="content-image">`;
-            } else {
-                // Markdown format
-                imageCode = `![${uploadedImageFilename}](${uploadedImageUrl})`;
-            }
-            
-            // Get cursor position
-            const startPos = contentTextarea.selectionStart;
-            const endPos = contentTextarea.selectionEnd;
-            
-            // Insert image code at cursor
-            contentTextarea.value = 
-                contentTextarea.value.substring(0, startPos) + 
-                imageCode + 
-                contentTextarea.value.substring(endPos);
-            
-            // Set cursor position after inserted code
-            contentTextarea.selectionStart = startPos + imageCode.length;
-            contentTextarea.selectionEnd = startPos + imageCode.length;
-            
-            // Focus back on textarea
-            contentTextarea.focus();
-            
-            // Reset the file input for next upload
-            contentImageInput.value = '';
-            
-            // Optionally, keep the preview but disable the insert button
-            insertButton.disabled = true;
-        });
+            insertButton.addEventListener('click', function(e) {
+                console.log("Insert button clicked");
+                e.preventDefault(); // Prevent form submission
+                
+                if (!uploadedImageUrl || !contentTextarea) {
+                    console.log("Missing uploadedImageUrl or contentTextarea");
+                    return;
+                }
+                
+                // Determine if we're in HTML or Markdown mode based on the radio buttons
+                const isHtmlMode = htmlRadio.checked;
+                console.log("HTML mode:", isHtmlMode);
+                
+                let imageCode;
+                if (isHtmlMode) {
+                    // HTML format
+                    imageCode = `<img src="${uploadedImageUrl}" alt="${uploadedImageFilename}" class="content-image">`;
+                } else {
+                    // Markdown format
+                    imageCode = `![${uploadedImageFilename}](${uploadedImageUrl})`;
+                }
+                
+                console.log("Image code to insert:", imageCode);
+                
+                // Get cursor position
+                const startPos = contentTextarea.selectionStart;
+                const endPos = contentTextarea.selectionEnd;
+                
+                // Insert image code at cursor
+                contentTextarea.value = 
+                    contentTextarea.value.substring(0, startPos) + 
+                    imageCode + 
+                    contentTextarea.value.substring(endPos);
+                
+                // Set cursor position after inserted code
+                contentTextarea.selectionStart = startPos + imageCode.length;
+                contentTextarea.selectionEnd = startPos + imageCode.length;
+                
+                // Focus back on textarea
+                contentTextarea.focus();
+                
+                console.log("Image inserted at cursor position");
+                
+                // Reset the file input for next upload
+                contentImageInput.value = '';
+                
+                // Keep the preview but disable the insert button until next upload
+                insertButton.disabled = true;
+            });
+        }
+    }
+    
+    // Call setup immediately in case DOMContentLoaded already fired
+    if (document.readyState === 'loading') {
+        console.log("Document still loading, waiting for DOMContentLoaded");
+    } else {
+        console.log("Document already loaded, running setup immediately");
+        setupSlugGeneration();
+        setupFormatToggle();
+        setupContentImageUpload();
     }
 </script>
 {% endblock %}
