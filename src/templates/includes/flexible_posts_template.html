@@ -5,25 +5,37 @@
         {% if section_title == "Latest Insights" %}
             <h1 style="text-align: center; padding-top: 5rem; font-size: 2.2rem">{{ section_title }}</h1>
         {% endif %}
-        
+
         <!-- Post grid with fixed number of columns -->
         <div class="blog-posts">
             {% if posts %}
                 {% for post in posts %}
-                <div class="blog-post">
-                    <div class="blog-post-thumbnail">
-                        <img src="{{ url_for('static', filename=post.featured_image) if post.featured_image else url_for('static', filename='images/default-post.jpg') }}" alt="{{ post.title }}">
-                    </div>
-                    <div class="blog-post-content">
-                        <div class="blog-post-meta">
-                            <span class="blog-post-date">{{ post.created_at.strftime('%B %d, %Y') }}</span>
-                            <span class="blog-post-category">{{ post.category.name }}</span>
+                    <div class="blog-post">
+                        {% if current_user.is_authenticated %}
+                            <div class="admin-post-controls" style="position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 5px;">
+                                {% if not post.published %}
+                                    <div class="unpublished-badge" style="background-color: #e74c3c; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold;">
+                                        <i class="fas fa-eye-slash"></i> Unpublished
+                                    </div>
+                                {% endif %}
+                                <a href="{{ url_for('admin.edit_post', post_id=post.id) }}" class="edit-button" style="background-color: #3498db; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; text-decoration: none;" target="_blank">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                            </div>
+                        {% endif %}
+                        <div class="blog-post-thumbnail" style="position: relative;">
+                            <img src="{{ url_for('static', filename=post.featured_image) if post.featured_image else url_for('static', filename='images/default-post.jpg') }}" alt="{{ post.title }}">
                         </div>
-                        <h3 class="blog-post-title">{{ post.title }}</h3>
-                        <p class="blog-post-excerpt">{{ post.excerpt }}</p>
-                        <a href="{{ url_for('blog.post', slug=post.slug) }}" class="read-more">Read More</a>
+                        <div class="blog-post-content">
+                            <div class="blog-post-meta">
+                                <span class="blog-post-date">{{ post.created_at.strftime('%B %d, %Y') }}</span>
+                                <span class="blog-post-category">{{ post.category.name }}</span>
+                            </div>
+                            <h3 class="blog-post-title">{{ post.title }}</h3>
+                            <p class="blog-post-excerpt">{{ post.excerpt }}</p>
+                            <a href="{{ url_for('blog.post', slug=post.slug) }}" class="read-more">Read More</a>
+                        </div>
                     </div>
-                </div>
                 {% endfor %}
             {% else %}
                 <div class="no-posts-message">
@@ -31,7 +43,7 @@
                 </div>
             {% endif %}
         </div>
-        
+
         <!-- Fixed column count CSS -->
         <style>
             /* Target both homepage and blog page containers with high specificity */
@@ -45,7 +57,7 @@
                 gap: 2rem !important;
                 margin-bottom: 3rem !important;
             }
-            
+
             /* Force exactly 3 cards per row on all screen sizes above tablet */
             @media (min-width: 992px) {
                 html body .container .blog-posts,
@@ -57,7 +69,7 @@
                     grid-template-columns: repeat(3, 1fr) !important;
                 }
             }
-            
+
             /* Force exactly 2 cards per row on tablet */
             @media (min-width: 768px) and (max-width: 991px) {
                 html body .container .blog-posts,
@@ -69,7 +81,7 @@
                     grid-template-columns: repeat(2, 1fr) !important;
                 }
             }
-            
+
             /* Force exactly 1 card per row on mobile */
             @media (max-width: 767px) {
                 html body .container .blog-posts,
@@ -81,81 +93,78 @@
                     grid-template-columns: 1fr !important;
                 }
             }
-            
+
             /* Ensure blog post cards take full width of their grid cell */
             html body .blog-post,
             html body .post-card {
                 width: 100% !important;
                 max-width: none !important;
                 box-sizing: border-box !important;
+                position: relative !important;
             }
         </style>
-        
+
         <!-- JavaScript to ensure consistent column count after page load -->
         <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Force consistent grid layout after page load
-            var blogPostsContainers = document.querySelectorAll('.blog-posts, .posts-grid');
-            
-            function applyGridLayout() {
-                blogPostsContainers.forEach(function(container) {
-                    container.style.display = 'grid';
-                    container.style.gap = '2rem';
-                    
-                    // Set column count based on viewport width
-                    if (window.innerWidth >= 992) {
-                        container.style.gridTemplateColumns = 'repeat(3, 1fr)';
-                    } else if (window.innerWidth >= 768) {
-                        container.style.gridTemplateColumns = 'repeat(2, 1fr)';
-                    } else {
-                        container.style.gridTemplateColumns = '1fr';
-                    }
-                });
-            }
-            
-            // Apply initially
-            applyGridLayout();
-            
-            // Apply on resize
-            window.addEventListener('resize', applyGridLayout);
-        });
+            document.addEventListener('DOMContentLoaded', function() {
+                // Force consistent grid layout after page load
+                var blogPostsContainers = document.querySelectorAll('.blog-posts, .posts-grid');
+
+                function applyGridLayout() {
+                    blogPostsContainers.forEach(function(container) {
+                        container.style.display = 'grid';
+                        container.style.gap = '2rem';
+
+                        // Set column count based on viewport width
+                        if (window.innerWidth >= 992) {
+                            container.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                        } else if (window.innerWidth >= 768) {
+                            container.style.gridTemplateColumns = 'repeat(2, 1fr)';
+                        } else {
+                            container.style.gridTemplateColumns = '1fr';
+                        }
+                    });
+                }
+
+                // Apply initially
+                applyGridLayout();
+
+                // Apply on resize
+                window.addEventListener('resize', applyGridLayout);
+            });
         </script>
-        
+
         <!-- Pagination controls -->
         {% if show_pagination and pagination %}
-        <div class="pagination">
-            {% if pagination.has_prev %}
-                <a href="{{ url_for(request.endpoint, page=pagination.prev_num, **pagination_args) }}" class="pagination-prev">&laquo; Previous</a>
-            {% else %}
-                <span class="pagination-prev disabled">&laquo; Previous</span>
-            {% endif %}
-            
-            {% for page_num in range(1, pagination.pages + 1) %}
-                {% if page_num == pagination.page %}
-                    <span class="pagination-current">{{ page_num }}</span>
+            <div class="pagination">
+                {% if pagination.has_prev %}
+                    <a href="{{ url_for(request.endpoint, page=pagination.prev_num, **pagination_args) }}" class="pagination-prev">&laquo; Previous</a>
                 {% else %}
-                    <a href="{{ url_for(request.endpoint, page=page_num, **pagination_args) }}" class="pagination-num">{{ page_num }}</a>
+                    <span class="pagination-prev disabled">&laquo; Previous</span>
                 {% endif %}
-            {% endfor %}
-            
-            {% if pagination.has_next %}
-                <a href="{{ url_for(request.endpoint, page=pagination.next_num, **pagination_args) }}" class="pagination-next">Next &raquo;</a>
-            {% else %}
-                <span class="pagination-next disabled">Next &raquo;</span>
-            {% endif %}
-        </div>
+
+                {% for page_num in range(1, pagination.pages + 1) %}
+                    {% if page_num == pagination.page %}
+                        <span class="pagination-current">{{ page_num }}</span>
+                    {% else %}
+                        <a href="{{ url_for(request.endpoint, page=page_num, **pagination_args) }}" class="pagination-num">{{ page_num }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if pagination.has_next %}
+                    <a href="{{ url_for(request.endpoint, page=pagination.next_num, **pagination_args) }}" class="pagination-next">Next &raquo;</a>
+                {% else %}
+                    <span class="pagination-next disabled">Next &raquo;</span>
+                {% endif %}
+            </div>
         {% endif %}
-        
+
         <!-- Optional CTA button -->
         {% if show_view_all and view_all_url %}
-        <div class="text-center">
-            <a 
-            href="{{ view_all_url }}"
-            class="cta-button"
-            style="margin-bottom: 5rem"
-            >
-            {{ view_all_text|default('View All Posts') }}</a>
-        </div>
+            <div class="text-center">
+                <a href="{{ view_all_url }}" class="cta-button" style="margin-bottom: 5rem">
+                    {{ view_all_text|default('View All Posts') }}</a>
+            </div>
         {% endif %}
     </div>
 </section>
