@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask_login import current_user
 from src.models.blog import Post, Category, Tag, Comment
 from src.models import db
 from datetime import datetime
@@ -15,23 +16,23 @@ class CustomPagination:
         self.page = page
         self.per_page = per_page
         self.total = total
-        
+
     @property
     def pages(self):
         return max(1, self.total // self.per_page + (1 if self.total % self.per_page > 0 else 0))
-        
+
     @property
     def has_prev(self):
         return self.page > 1
-        
+
     @property
     def has_next(self):
         return self.page < self.pages
-        
+
     @property
     def prev_num(self):
         return self.page - 1
-        
+
     @property
     def next_num(self):
         return self.page + 1
@@ -66,28 +67,34 @@ def index():
     page = request.args.get('page', 1, type=int)
     per_page = 6
     
-    # Create query for published posts
-    query = Post.query.filter_by(published=True).order_by(Post.created_at.desc())
+    # Create query for posts - show unpublished posts only to admin users
+    if current_user.is_authenticated:
+        # Admin sees all posts
+        query = Post.query.order_by(Post.created_at.desc())
+    else:
+        # Regular users only see published posts
+        query = Post.query.filter_by(published=True).order_by(Post.created_at.desc())
     
     # Use custom pagination
     posts = paginate_query(query, page, per_page)
     
-    return render_template('blog/index.html', 
-                          posts=posts,
-                          title="Blog")
+    return render_template('blog/index.html', posts=posts, title="Blog")
 
 @blog_bp.route('/post/<slug>')
 def post(slug):
     """Display a single blog post"""
     post = Post.query.filter_by(slug=slug).first_or_404()
     
+    # Check if post is unpublished and user is not admin
+    if not post.published and not current_user.is_authenticated:
+        # Return 404 for unpublished posts for non-admin users
+        return render_template('404.html'), 404
+    
     # Increment view count
     post.views += 1
     db.session.commit()
     
-    return render_template('blog/post.html', 
-                          post=post,
-                          title=post.title)
+    return render_template('blog/post.html', post=post, title=post.title)
 
 @blog_bp.route('/category/<slug>')
 def category(slug):
@@ -96,19 +103,23 @@ def category(slug):
     page = request.args.get('page', 1, type=int)
     per_page = 6
     
-    # Create query for published posts in this category
-    query = Post.query.filter_by(
-        category_id=category.id, 
-        published=True
-    ).order_by(Post.created_at.desc())
+    # Create query for posts in this category - show unpublished posts only to admin users
+    if current_user.is_authenticated:
+        # Admin sees all posts in category
+        query = Post.query.filter_by(
+            category_id=category.id
+        ).order_by(Post.created_at.desc())
+    else:
+        # Regular users only see published posts in category
+        query = Post.query.filter_by(
+            category_id=category.id,
+            published=True
+        ).order_by(Post.created_at.desc())
     
     # Use custom pagination
     posts = paginate_query(query, page, per_page)
     
-    return render_template('blog/category.html',
-                          category=category,
-                          posts=posts,
-                          title=f"Category: {category.name}")
+    return render_template('blog/category.html', category=category, posts=posts, title=f"Category: {category.name}")
 
 @blog_bp.route('/tag/<slug>')
 def tag(slug):
@@ -117,16 +128,18 @@ def tag(slug):
     page = request.args.get('page', 1, type=int)
     per_page = 6
     
-    # Filter published posts with this tag
-    posts_with_tag = [post for post in tag.posts if post.published]
+    # Filter posts with this tag - show unpublished posts only to admin users
+    if current_user.is_authenticated:
+        # Admin sees all posts with tag
+        posts_with_tag = tag.posts
+    else:
+        # Regular users only see published posts with tag
+        posts_with_tag = [post for post in tag.posts if post.published]
     
     # Use custom pagination for the filtered list
     posts = paginate_list(posts_with_tag, page, per_page)
     
-    return render_template('blog/tag.html',
-                          tag=tag,
-                          posts=posts,
-                          title=f"Tag: {tag.name}")
+    return render_template('blog/tag.html', tag=tag, posts=posts, title=f"Tag: {tag.name}")
 
 @blog_bp.route('/search')
 def search():
@@ -136,24 +149,25 @@ def search():
     per_page = 6
     
     if not query_text:
-        return render_template('blog/search.html',
-                              posts=None,
-                              query='',
-                              title="Search")
+        return render_template('blog/search.html', posts=None, query='', title="Search")
     
-    # Create query for published posts matching search
-    query = Post.query.filter(
-        Post.published == True,
-        (Post.title.ilike(f'%{query_text}%') | Post.content.ilike(f'%{query_text}%'))
-    ).order_by(Post.created_at.desc())
+    # Create query for posts matching search - show unpublished posts only to admin users
+    if current_user.is_authenticated:
+        # Admin sees all matching posts
+        query = Post.query.filter(
+            (Post.title.ilike(f'%{query_text}%') | Post.content.ilike(f'%{query_text}%'))
+        ).order_by(Post.created_at.desc())
+    else:
+        # Regular users only see published matching posts
+        query = Post.query.filter(
+            Post.published == True,
+            (Post.title.ilike(f'%{query_text}%') | Post.content.ilike(f'%{query_text}%'))
+        ).order_by(Post.created_at.desc())
     
     # Use custom pagination
     posts = paginate_query(query, page, per_page)
     
-    return render_template('blog/search.html',
-                          posts=posts,
-                          query=query_text,
-                          title=f"Search: {query_text}")
+    return render_template('blog/search.html', posts=posts, query=query_text, title=f"Search: {query_text}")
 
 @blog_bp.route('/post/<slug>/comment', methods=['POST'])
 def add_comment(slug):
