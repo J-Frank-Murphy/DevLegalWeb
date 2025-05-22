@@ -21,14 +21,32 @@
         </div>
         
         <div class="form-group">
+            <label for="post_date">Publication Date</label>
+            <input type="datetime-local" id="post_date" name="post_date" value="{{ post.created_at.strftime('%Y-%m-%dT%H:%M') if post and post.created_at else '' }}">
+            <small>Optional. If not specified, current date and time will be used.</small>
+        </div>
+        
+        <div class="form-group">
             <label for="excerpt">Excerpt</label>
             <textarea id="excerpt" name="excerpt" rows="3">{{ post.excerpt if post else '' }}</textarea>
+        </div>
+        
+        <div class="form-group format-toggle">
+            <label>Content Format:</label>
+            <div class="toggle-container">
+                <input type="radio" id="format_html" name="content_format" value="html" {% if not post or not post.content_format or post.content_format == 'html' %}checked{% endif %}>
+                <label for="format_html">HTML</label>
+                
+                <input type="radio" id="format_markdown" name="content_format" value="markdown" {% if post and post.content_format == 'markdown' %}checked{% endif %}>
+                <label for="format_markdown">Markdown</label>
+            </div>
+            <small class="format-hint html-hint {% if post and post.content_format == 'markdown' %}hidden{% endif %}">HTML markup is allowed</small>
+            <small class="format-hint markdown-hint {% if not post or not post.content_format or post.content_format == 'html' %}hidden{% endif %}">Markdown formatting will be converted to HTML when displayed</small>
         </div>
         
         <div class="form-group">
             <label for="content">Content</label>
             <textarea id="content" name="content" rows="15">{{ post.content if post else '' }}</textarea>
-            <small>HTML markup is allowed</small>
         </div>
         
         <!-- Content Image Upload Section -->
@@ -103,8 +121,28 @@
     </form>
 </div>
 
-<!-- Styles for content image upload -->
+<!-- Styles for content image upload and format toggle -->
 <style>
+    .format-toggle {
+        margin-bottom: 10px;
+    }
+    
+    .toggle-container {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 5px;
+    }
+    
+    .format-hint {
+        display: block;
+        font-size: 0.8em;
+        color: #666;
+    }
+    
+    .hidden {
+        display: none;
+    }
+    
     .content-image-upload {
         margin-bottom: 20px;
     }
@@ -152,6 +190,28 @@
             });
         }
         
+        // Format toggle functionality
+        const htmlRadio = document.getElementById('format_html');
+        const markdownRadio = document.getElementById('format_markdown');
+        const htmlHint = document.querySelector('.html-hint');
+        const markdownHint = document.querySelector('.markdown-hint');
+        
+        if (htmlRadio && markdownRadio) {
+            htmlRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    htmlHint.classList.remove('hidden');
+                    markdownHint.classList.add('hidden');
+                }
+            });
+            
+            markdownRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    markdownHint.classList.remove('hidden');
+                    htmlHint.classList.add('hidden');
+                }
+            });
+        }
+        
         // Content image upload functionality
         setupContentImageUpload();
     });
@@ -161,6 +221,8 @@
         const insertButton = document.getElementById('insert_content_image');
         const previewContainer = document.getElementById('content_image_preview');
         const contentTextarea = document.getElementById('content');
+        const htmlRadio = document.getElementById('format_html');
+        const markdownRadio = document.getElementById('format_markdown');
         
         let uploadedImageUrl = '';
         let uploadedImageFilename = '';
@@ -213,9 +275,8 @@
         insertButton.addEventListener('click', function() {
             if (!uploadedImageUrl || !contentTextarea) return;
             
-            // Determine if we're in HTML or Markdown mode
-            // For this implementation, we'll check if the content contains HTML tags
-            const isHtmlMode = /<[a-z][\s\S]*>/i.test(contentTextarea.value);
+            // Determine if we're in HTML or Markdown mode based on the radio buttons
+            const isHtmlMode = htmlRadio.checked;
             
             let imageCode;
             if (isHtmlMode) {
