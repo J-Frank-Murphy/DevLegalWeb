@@ -438,70 +438,43 @@
                             }
                             
                             // Ensure the URL is absolute if it starts with /
+                            let displayUrl = imageUrl;
+                            let absoluteUrl = imageUrl;
+                            
                             if (imageUrl.startsWith('/')) {
                                 // Get the base URL (protocol + host)
                                 const baseUrl = window.location.origin;
-                                const absoluteUrl = baseUrl + imageUrl;
+                                absoluteUrl = baseUrl + imageUrl;
                                 console.log("Converted to absolute URL:", absoluteUrl);
-                                
-                                // For display purposes, we'll keep the relative URL
-                                const displayUrl = imageUrl;
-                                
-                                // Create HTML and Markdown versions of the image code
-                                const htmlCode = `<div class="blog-post-content-image-container"><img src="${displayUrl}" alt="${file.name}" class="blog-post-content-image"></div>`;
-                                const markdownCode = `![${file.name}](${displayUrl})`;
-                                
-                                // Create a new image item element
-                                const imageItem = document.createElement('div');
-                                imageItem.className = 'uploaded-image-item';
-                                imageItem.innerHTML = `
-                                    <img src="${absoluteUrl}" alt="${file.name}" class="uploaded-image-thumbnail">
-                                    <div class="uploaded-image-info">
-                                        <div class="uploaded-image-path">${displayUrl}</div>
-                                        <div class="uploaded-image-html">${htmlCode}</div>
-                                        <div class="uploaded-image-markdown">${markdownCode}</div>
-                                    </div>
-                                `;
-                                
-                                // Add to the uploaded images list
-                                uploadedImagesList.prepend(imageItem);
-                                
-                                // Add click-to-copy functionality
-                                setupCopyToClipboard(imageItem.querySelector('.uploaded-image-path'));
-                                setupCopyToClipboard(imageItem.querySelector('.uploaded-image-html'));
-                                setupCopyToClipboard(imageItem.querySelector('.uploaded-image-markdown'));
-                                
-                                console.log("Image added to panel");
-                            } else {
-                                // URL is already absolute
-                                const displayUrl = imageUrl;
-                                
-                                // Create HTML and Markdown versions of the image code
-                                const htmlCode = `<div class="blog-post-content-image-container"><img src="${displayUrl}" alt="${file.name}" class="blog-post-content-image"></div>`;
-                                const markdownCode = `![${file.name}](${displayUrl})`;
-                                
-                                // Create a new image item element
-                                const imageItem = document.createElement('div');
-                                imageItem.className = 'uploaded-image-item';
-                                imageItem.innerHTML = `
-                                    <img src="${displayUrl}" alt="${file.name}" class="uploaded-image-thumbnail">
-                                    <div class="uploaded-image-info">
-                                        <div class="uploaded-image-path">${displayUrl}</div>
-                                        <div class="uploaded-image-html">${htmlCode}</div>
-                                        <div class="uploaded-image-markdown">${markdownCode}</div>
-                                    </div>
-                                `;
-                                
-                                // Add to the uploaded images list
-                                uploadedImagesList.prepend(imageItem);
-                                
-                                // Add click-to-copy functionality
-                                setupCopyToClipboard(imageItem.querySelector('.uploaded-image-path'));
-                                setupCopyToClipboard(imageItem.querySelector('.uploaded-image-html'));
-                                setupCopyToClipboard(imageItem.querySelector('.uploaded-image-markdown'));
-                                
-                                console.log("Image added to panel");
                             }
+                            
+                            // Create HTML and Markdown versions of the image code
+                            const htmlCode = `<div class="blog-post-content-image-container"><img src="${displayUrl}" alt="${file.name}" class="blog-post-content-image"></div>`;
+                            const markdownCode = `![${file.name}](${displayUrl})`;
+                            
+                            // Create a new image item element
+                            const imageItem = document.createElement('div');
+                            imageItem.className = 'uploaded-image-item';
+                            
+                            // Set the HTML content safely
+                            imageItem.innerHTML = `
+                                <img src="${absoluteUrl}" alt="${file.name}" class="uploaded-image-thumbnail">
+                                <div class="uploaded-image-info">
+                                    <div class="uploaded-image-path">${displayUrl}</div>
+                                    <div class="uploaded-image-html">${htmlCode}</div>
+                                    <div class="uploaded-image-markdown">${markdownCode}</div>
+                                </div>
+                            `;
+                            
+                            // Add to the uploaded images list
+                            uploadedImagesList.prepend(imageItem);
+                            
+                            // Add click-to-copy functionality
+                            setupCopyToClipboard(imageItem.querySelector('.uploaded-image-path'));
+                            setupCopyToClipboard(imageItem.querySelector('.uploaded-image-html'));
+                            setupCopyToClipboard(imageItem.querySelector('.uploaded-image-markdown'));
+                            
+                            console.log("Image added to panel");
                         } else {
                             console.error("Upload response format not recognized:", data);
                             uploadStatus.textContent = "Upload completed but response format not recognized.";
