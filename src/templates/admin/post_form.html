@@ -323,8 +323,12 @@
         const uploadedImagesList = document.getElementById('uploaded_images_list');
         const htmlRadio = document.getElementById('format_html');
         
+        // Log elements to verify they're found
+        console.log("Content image input:", contentImageInput);
+        console.log("Uploaded images list:", uploadedImagesList);
+        
         // Handle file selection
-        if (contentImageInput) {
+        if (contentImageInput && uploadedImagesList) {
             contentImageInput.addEventListener('change', function() {
                 console.log("File input changed");
                 
@@ -359,7 +363,18 @@
                             
                             // Get the full path with /static/ prefix
                             const fullPath = data.url;
-                            const relativePath = data.url.replace(window.location.origin, '');
+                            
+                            // For relative path, we need to extract just the part after /static/
+                            // If the URL is absolute (contains domain), extract just the path portion
+                            let relativePath;
+                            if (fullPath.includes('://')) {
+                                // It's an absolute URL, extract the path
+                                const url = new URL(fullPath);
+                                relativePath = url.pathname;
+                            } else {
+                                // It's already a relative path
+                                relativePath = fullPath;
+                            }
                             
                             // Create HTML and Markdown versions of the image code
                             const htmlCode = `<div class="blog-post-content-image-container"><img src="${relativePath}" alt="${file.name}" class="blog-post-content-image"></div>`;
@@ -400,6 +415,8 @@
                     this.value = '';
                 }
             });
+        } else {
+            console.error("Could not find content image input or uploaded images list");
         }
     }
     
