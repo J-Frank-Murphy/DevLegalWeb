@@ -157,21 +157,12 @@ def post(slug):
     post.views += 1
     db.session.commit()
     
-    # Process markdown content if needed - with robust error handling
-    try:
-        # Check if post has content_format attribute and it's set to markdown
-        if hasattr(post, 'content_format') and post.content_format == 'markdown':
-            # Use safe markdown conversion with fallback
-            post.html_content = get_markdown_html(post.content)
-        else:
-            # For posts without content_format or with HTML format
-            post.html_content = post.content
-    except Exception as e:
-        # If any error occurs, log it and fall back to the original content
-        current_app.logger.error(f"Error rendering post content: {str(e)}")
-        post.html_content = post.content
+    # Use the html_content property directly - DO NOT try to set it
+    # The property already handles HTML vs markdown conversion
     
-    return render_template('blog/post.html', post=post, title=post.title, html_content=post.content)
+    return render_template('blog/post.html', 
+                          post=post, 
+                          title=post.title)
 
 @blog_bp.route('/category/<slug>')
 def category(slug):
