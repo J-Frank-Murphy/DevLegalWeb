@@ -42,19 +42,27 @@ def get_markdown_html(content):
     """Convert markdown to HTML with image path resolution and error handling"""
     if not content:
         return ""
-        
+    
     uploads_url_path = current_app.config.get('UPLOADS_URL_PATH', '/static/uploads/')
     
     try:
-        # Create markdown instance with extensions
+        # Create markdown instance with basic extensions only
         md = markdown.Markdown(extensions=[
-            FencedCodeExtension(),
-            TableExtension(),
-            ImagePathExtension(uploads_url_path=uploads_url_path)
+            'fenced_code',
+            'tables'
         ])
         
         # Convert markdown to HTML
         html = md.convert(content)
+        
+        # Simple regex-based image path resolution (safer than custom extension)
+        # This replaces markdown image references like ![alt](filename.jpg) with full paths
+        html = re.sub(
+            r'<img src="([^/"][^"]+)"', 
+            f'<img src="{uploads_url_path}\\1"', 
+            html
+        )
+        
         return html
     except Exception as e:
         # If markdown conversion fails, log the error and return the original content
@@ -148,13 +156,15 @@ def post(slug):
     # Increment view count
     post.views += 1
     db.session.commit()
-
+    
     # Process markdown content if needed - with robust error handling
     try:
+        # Check if post has content_format attribute and it's set to markdown
         if hasattr(post, 'content_format') and post.content_format == 'markdown':
+            # Use safe markdown conversion with fallback
             post.html_content = get_markdown_html(post.content)
         else:
-            # For backward compatibility with existing posts
+            # For posts without content_format or with HTML format
             post.html_content = post.content
     except Exception as e:
         # If any error occurs, log it and fall back to the original content
