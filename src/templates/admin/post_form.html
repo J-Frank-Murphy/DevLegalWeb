@@ -265,7 +265,6 @@
 
 {% block scripts %}
 {{ super() }}
-{% endblock %}
 <script>
     // Auto-generate slug from title and setup other functionality immediately
     document.addEventListener('DOMContentLoaded', function() {
@@ -322,7 +321,6 @@
         // Get DOM elements
         const contentImageInput = document.getElementById('content_image_file');
         const uploadedImagesList = document.getElementById('uploaded_images_list');
-        const htmlRadio = document.getElementById('format_html');
         
         // Log elements to verify they're found
         console.log("Content image input:", contentImageInput);
@@ -349,45 +347,69 @@
                         body: formData
                     })
                     .then(response => {
-                        console.log("Upload response received");
+                        console.log("Upload response status:", response.status);
+                        console.log("Upload response OK:", response.ok);
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.status);
+                        }
                         return response.json();
                     })
                     .then(data => {
                         console.log("Upload response data:", data);
                         
-                        if (data.success) {
+                        // Try to handle different response formats
+                        let success = false;
+                        let imageUrl = '';
+                        
+                        // Check for standard format
+                        if (data.success === true && data.url) {
+                            success = true;
+                            imageUrl = data.url;
+                        } 
+                        // Check for alternative format where success might be implied
+                        else if (data.url) {
+                            success = true;
+                            imageUrl = data.url;
+                        }
+                        // Check for format where the entire response might be the URL
+                        else if (typeof data === 'string' && (data.startsWith('/') || data.startsWith('http'))) {
+                            success = true;
+                            imageUrl = data;
+                        }
+                        // Check for format where URL might be in a different property
+                        else if (data.path) {
+                            success = true;
+                            imageUrl = data.path;
+                        }
+                        else if (data.file_path) {
+                            success = true;
+                            imageUrl = data.file_path;
+                        }
+                        else if (data.filename) {
+                            success = true;
+                            imageUrl = '/static/uploads/' + data.filename;
+                        }
+                        
+                        if (success && imageUrl) {
+                            console.log("Upload successful, image URL:", imageUrl);
+                            
                             // Remove the "no images" message if it exists
                             const noImagesMessage = uploadedImagesList.querySelector('.no-images-message');
                             if (noImagesMessage) {
                                 noImagesMessage.remove();
                             }
                             
-                            // Get the full path with /static/ prefix
-                            const fullPath = data.url;
-                            
-                            // For relative path, we need to extract just the part after /static/
-                            // If the URL is absolute (contains domain), extract just the path portion
-                            let relativePath;
-                            if (fullPath.includes('://')) {
-                                // It's an absolute URL, extract the path
-                                const url = new URL(fullPath);
-                                relativePath = url.pathname;
-                            } else {
-                                // It's already a relative path
-                                relativePath = fullPath;
-                            }
-                            
                             // Create HTML and Markdown versions of the image code
-                            const htmlCode = `<div class="blog-post-content-image-container"><img src="${relativePath}" alt="${file.name}" class="blog-post-content-image"></div>`;
-                            const markdownCode = `![${file.name}](${relativePath})`;
+                            const htmlCode = `<div class="blog-post-content-image-container"><img src="${imageUrl}" alt="${file.name}" class="blog-post-content-image"></div>`;
+                            const markdownCode = `![${file.name}](${imageUrl})`;
                             
                             // Create a new image item element
                             const imageItem = document.createElement('div');
                             imageItem.className = 'uploaded-image-item';
                             imageItem.innerHTML = `
-                                <img src="${fullPath}" alt="${file.name}" class="uploaded-image-thumbnail">
+                                <img src="${imageUrl}" alt="${file.name}" class="uploaded-image-thumbnail">
                                 <div class="uploaded-image-info">
-                                    <div class="uploaded-image-path">${relativePath}</div>
+                                    <div class="uploaded-image-path">${imageUrl}</div>
                                     <div class="uploaded-image-html">${htmlCode}</div>
                                     <div class="uploaded-image-markdown">${markdownCode}</div>
                                 </div>
@@ -403,13 +425,13 @@
                             
                             console.log("Image added to panel");
                         } else {
-                            console.error("Upload failed:", data.error || "Unknown error");
-                            alert("Upload failed: " + (data.error || "Unknown error"));
+                            console.error("Upload response format not recognized:", data);
+                            alert("Upload completed but response format not recognized. Check console for details.");
                         }
                     })
                     .catch(error => {
                         console.error('Error uploading image:', error);
-                        alert("Upload failed. Please try again.");
+                        alert("Upload failed. Please try again. Error: " + error.message);
                     });
                     
                     // Reset the file input for next upload
@@ -460,3 +482,4 @@
         setupContentImageUpload();
     }
 </script>
+{% endblock %}
