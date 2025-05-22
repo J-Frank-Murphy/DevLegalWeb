@@ -524,9 +524,13 @@
     {% endif %}
 
     <!-- Post content -->
-<div class="blog-post-content">
-    {{ post.html_content|safe }}
-</div>
+        <div class="blog-post-content">
+            {% if post.content_format == 'markdown' %}
+                {{ post.html_content|safe }}
+            {% else %}
+                {{ post.content|safe }}
+            {% endif %}
+        </div>
 
 
 
