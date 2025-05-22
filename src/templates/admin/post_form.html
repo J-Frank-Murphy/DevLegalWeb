@@ -1,77 +1,50 @@
 {% extends "admin/base_layout.html" %}
+
 {% block title %}{% if post %}Edit Post{% else %}New Post{% endif %} - Dev Legal{% endblock %}
+
 {% block header_title %}{% if post %}Edit Post{% else %}New Post{% endif %}{% endblock %}
+
 {% block content %}
 <div class="admin-content">
     <form method="POST" enctype="multipart/form-data" class="post-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        {% if post %}
-        <input type="hidden" name="post_id" value="{{ post.id }}"/>
-        {% endif %}
+        
         <div class="form-group">
             <label for="title">Title</label>
             <input type="text" id="title" name="title" value="{{ post.title if post else '' }}" required>
         </div>
+        
         <div class="form-group">
             <label for="slug">Slug</label>
             <input type="text" id="slug" name="slug" value="{{ post.slug if post else '' }}">
             <small>Leave empty to auto-generate from title</small>
         </div>
-        <div class="form-group">
-            <label for="post_date">Publication Date</label>
-            <input type="datetime-local" id="post_date" name="post_date" value="{{ post.created_at.strftime('%Y-%m-%dT%H:%M') if post and post.created_at else '' }}">
-            <small>Optional. If not specified, current date and time will be used.</small>
-        </div>
+        
         <div class="form-group">
             <label for="excerpt">Excerpt</label>
             <textarea id="excerpt" name="excerpt" rows="3">{{ post.excerpt if post else '' }}</textarea>
         </div>
-        <div class="form-group format-toggle">
-            <label>Content Format:</label>
-            <div class="toggle-container">
-                <input type="radio" id="format_html" name="content_format" value="html" {% if not post or not post.content_format or post.content_format == 'html' %}checked{% endif %}>
-                <label for="format_html">HTML</label>
-                <input type="radio" id="format_markdown" name="content_format" value="markdown" {% if post and post.content_format == 'markdown' %}checked{% endif %}>
-                <label for="format_markdown">Markdown</label>
-            </div>
-            <small class="format-hint html-hint {% if post and post.content_format == 'markdown' %}hidden{% endif %}">HTML markup is allowed</small>
-            <small class="format-hint markdown-hint {% if not post or not post.content_format or post.content_format == 'html' %}hidden{% endif %}">Markdown formatting will be converted to HTML when displayed</small>
-        </div>
+        
         <div class="form-group">
             <label for="content">Content</label>
             <textarea id="content" name="content" rows="15">{{ post.content if post else '' }}</textarea>
+            <small>HTML markup is allowed</small>
         </div>
         
-<!-- Image Upload Section -->
-<div class="form-group mt-4">
-  <label for="image-upload">Upload Images for Content</label>
-  <div class="custom-file">
-    <input type="file" class="custom-file-input" id="image-upload" accept="image/*">
-    <label class="custom-file-label" for="image-upload">Choose image...</label>
-  </div>
-  <small class="form-text text-muted">Upload images to insert into your content.</small>
-  
-  <!-- Image preview and insert area -->
-  <div id="image-preview-container" class="mt-3 d-none">
-    <div class="card">
-      <div class="card-body">
-        <div class="row">
-          <div class="col-md-8">
-            <img id="image-preview" class="img-fluid" src="" alt="Preview">
-          </div>
-          <div class="col-md-4">
-            <h5 id="image-name" class="card-title"></h5>
-            <p class="card-text">
-              <button type="button" id="insert-html-btn" class="btn btn-primary btn-sm mb-2">Insert as HTML</button>
-              <button type="button" id="insert-markdown-btn" class="btn btn-info btn-sm">Insert as Markdown</button>
-            </p>
-          </div>
+        <!-- Content Image Upload Section -->
+        <div class="form-group">
+            <label>Content Images</label>
+            <div class="content-image-upload">
+                <div class="upload-area" id="content-image-dropzone">
+                    <p>Drag & drop images here or click to upload</p>
+                    <input type="file" id="content-image-input" accept="image/*" style="display: none;">
+                </div>
+                <div class="upload-preview" id="content-image-preview">
+                    <!-- Uploaded images will appear here -->
+                </div>
+                <small>Upload images to insert into your content. Supported formats: JPG, PNG, GIF, WebP</small>
+            </div>
         </div>
-      </div>
-    </div>
-  </div>
-</div>
-
         
         <div class="form-group">
             <label for="category_id">Category</label>
@@ -82,6 +55,7 @@
                 {% endfor %}
             </select>
         </div>
+        
         <div class="form-group">
             <label>Tags</label>
             <div class="tag-checkboxes">
@@ -93,11 +67,13 @@
                 {% endfor %}
             </div>
         </div>
+        
         <div class="form-group">
             <label for="featured_image_url">Featured Image URL</label>
             <input type="text" id="featured_image_url" name="featured_image_url" value="{{ post.featured_image if post else '' }}">
             <small>Enter a URL or upload an image below</small>
         </div>
+        
         <div class="form-group">
             <label for="featured_image_file">Upload Featured Image</label>
             <input type="file" id="featured_image_file" name="featured_image_file" accept="image/*">
@@ -109,107 +85,105 @@
             </div>
             {% endif %}
         </div>
+        
         <div class="form-group checkbox-group">
             <input type="checkbox" id="published" name="published" {% if post and post.published %}checked{% endif %}>
             <label for="published">Published</label>
         </div>
+        
         <div class="form-group checkbox-group">
             <input type="checkbox" id="comments_enabled" name="comments_enabled" {% if not post or post.comments_enabled %}checked{% endif %}>
             <label for="comments_enabled">Enable Comments</label>
         </div>
+        
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">{% if post %}Update{% else %}Create{% endif %} Post</button>
             <a href="{{ url_for('admin.posts') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 </div>
+
+<!-- Styles for content image upload -->
 <style>
-    .format-toggle {
-        margin-bottom: 10px;
-    }
-    .toggle-container {
-        display: flex;
-        gap: 20px;
-        margin-bottom: 5px;
-    }
-    .format-hint {
-        display: block;
-        font-size: 0.8em;
-        color: #666;
-    }
-    .hidden {
-        display: none;
+    .content-image-upload {
+        margin-bottom: 20px;
     }
     
-    /* Image upload styling */
-    .image-upload-area {
+    .upload-area {
         border: 2px dashed #ccc;
         border-radius: 5px;
-        padding: 20px;
+        padding: 25px;
         text-align: center;
-        margin-bottom: 15px;
-        transition: all 0.3s ease;
-        position: relative;
-    }
-    
-    .image-upload-area input[type="file"] {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        top: 0;
-        left: 0;
-        opacity: 0;
         cursor: pointer;
-    }
-    
-    .image-upload-area.highlight {
-        border-color: #3498db;
-        background-color: rgba(52, 152, 219, 0.1);
-    }
-    
-    .upload-instructions {
-        color: #666;
-    }
-    
-    .upload-instructions i {
-        font-size: 2rem;
         margin-bottom: 10px;
-        color: #3498db;
+        background-color: #f9f9f9;
+        transition: all 0.3s ease;
     }
     
-    .upload-status {
-        margin-top: 10px;
-        padding: 10px;
+    .upload-area:hover, .upload-area.dragover {
+        border-color: #3498db;
+        background-color: #f0f8ff;
+    }
+    
+    .upload-preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+    }
+    
+    .image-item {
+        position: relative;
+        width: 150px;
+        border: 1px solid #ddd;
         border-radius: 4px;
-        display: none;
+        padding: 5px;
+        background: white;
     }
     
-    .upload-status.success {
+    .image-item img {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 3px;
         display: block;
-        background-color: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
     }
     
-    .upload-status.error {
-        display: block;
-        background-color: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
+    .image-item .image-name {
+        font-size: 12px;
+        margin-top: 5px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
     
-    .insert-btn {
-        margin-left: 10px;
-        background-color: #3498db;
-        color: white;
+    .image-item .image-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 5px;
+    }
+    
+    .image-item .image-actions button {
         border: none;
-        padding: 5px 10px;
-        border-radius: 4px;
+        background: #f0f0f0;
+        padding: 3px 8px;
+        border-radius: 3px;
         cursor: pointer;
+        font-size: 12px;
     }
     
-    .insert-btn:hover {
-        background-color: #2980b9;
+    .image-item .image-actions button.insert-btn {
+        background: #3498db;
+        color: white;
+    }
+    
+    .image-item .image-actions button.delete-btn {
+        background: #e74c3c;
+        color: white;
+    }
+    
+    .image-item .image-actions button:hover {
+        opacity: 0.8;
     }
 </style>
 {% endblock %}
@@ -236,180 +210,158 @@
             });
         }
         
-        // Format toggle functionality
-        const htmlRadio = document.getElementById('format_html');
-        const markdownRadio = document.getElementById('format_markdown');
-        const htmlHint = document.querySelector('.html-hint');
-        const markdownHint = document.querySelector('.markdown-hint');
+        // Content image upload functionality
+        setupContentImageUpload();
+    });
+    
+    function setupContentImageUpload() {
+        const dropzone = document.getElementById('content-image-dropzone');
+        const fileInput = document.getElementById('content-image-input');
+        const preview = document.getElementById('content-image-preview');
+        const contentTextarea = document.getElementById('content');
         
-        if (htmlRadio && markdownRadio) {
-            htmlRadio.addEventListener('change', function() {
-                if (this.checked) {
-                    htmlHint.classList.remove('hidden');
-                    markdownHint.classList.add('hidden');
-                }
-            });
+        // Click to upload
+        dropzone.addEventListener('click', () => {
+            fileInput.click();
+        });
+        
+        // Drag and drop functionality
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+        
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+        
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
             
-            markdownRadio.addEventListener('change', function() {
-                if (this.checked) {
-                    markdownHint.classList.remove('hidden');
-                    htmlHint.classList.add('hidden');
-                }
-            });
-        }
+            if (e.dataTransfer.files.length) {
+                uploadContentImage(e.dataTransfer.files[0]);
+            }
+        });
         
-        // Image upload handling
-        const imageInput = document.getElementById('content_image');
-        const uploadStatus = document.getElementById('upload-status');
-        const contentEditor = document.getElementById('content');
-        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        // File input change
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) {
+                uploadContentImage(fileInput.files[0]);
+                fileInput.value = ''; // Reset for future uploads
+            }
+        });
         
-        // Handle file selection
-        if (imageInput) {
-            imageInput.addEventListener('change', function(e) {
-                if (this.files.length > 0) {
-                    uploadImage(this.files[0]);
-                }
-            });
-        }
-        
-        function uploadImage(file) {
+        // Upload function
+        function uploadContentImage(file) {
+            // Check if file is an image
+            if (!file.type.match('image.*')) {
+                alert('Please upload an image file');
+                return;
+            }
+            
             // Create FormData
             const formData = new FormData();
-            formData.append('image', file);
+            formData.append('file', file);
             
-            // Show loading state
-            uploadStatus.className = 'upload-status';
-            uploadStatus.textContent = 'Uploading image...';
-            uploadStatus.style.display = 'block';
+            // Show loading indicator
+            const loadingItem = document.createElement('div');
+            loadingItem.className = 'image-item';
+            loadingItem.innerHTML = `
+                <div style="padding: 40px 0; text-align: center;">
+                    <p>Uploading...</p>
+                </div>
+            `;
+            preview.appendChild(loadingItem);
             
-            // Upload file
+            // Upload the image
             fetch('/admin/upload-content-image', {
                 method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': csrfToken
-                }
+                body: formData
             })
             .then(response => response.json())
             .then(data => {
+                // Remove loading indicator
+                preview.removeChild(loadingItem);
+                
                 if (data.success) {
-                    // Show success message with insert button
-                    uploadStatus.className = 'upload-status success';
-                    uploadStatus.innerHTML = `
-                        Image uploaded successfully: ${data.filename}
-                        <button type="button" class="insert-btn" id="insert-image-btn">
-                            Insert into content
-                        </button>
+                    // Create image preview item
+                    const imageItem = document.createElement('div');
+                    imageItem.className = 'image-item';
+                    imageItem.innerHTML = `
+                        <img src="${data.relative_url}" alt="${file.name}">
+                        <div class="image-name">${file.name}</div>
+                        <div class="image-actions">
+                            <button type="button" class="insert-btn">Insert</button>
+                            <button type="button" class="delete-btn">Delete</button>
+                        </div>
                     `;
                     
-                    // Add click handler for insert button
-                    document.getElementById('insert-image-btn').addEventListener('click', function() {
-                        insertImageToEditor(data.url, data.filename);
+                    // Store image data
+                    imageItem.dataset.url = data.url;
+                    imageItem.dataset.relativeUrl = data.relative_url;
+                    imageItem.dataset.filename = data.filename;
+                    
+                    // Add to preview
+                    preview.appendChild(imageItem);
+                    
+                    // Insert button click
+                    const insertBtn = imageItem.querySelector('.insert-btn');
+                    insertBtn.addEventListener('click', () => {
+                        insertImageAtCursor(data.url, data.filename);
+                    });
+                    
+                    // Delete button click
+                    const deleteBtn = imageItem.querySelector('.delete-btn');
+                    deleteBtn.addEventListener('click', () => {
+                        preview.removeChild(imageItem);
                     });
                 } else {
-                    // Show error message
-                    uploadStatus.className = 'upload-status error';
-                    uploadStatus.textContent = 'Error uploading image: ' + (data.error || 'Unknown error');
+                    alert('Upload failed: ' + (data.error || 'Unknown error'));
                 }
             })
             .catch(error => {
-                uploadStatus.className = 'upload-status error';
-                uploadStatus.textContent = 'Error uploading image: ' + error;
+                // Remove loading indicator
+                preview.removeChild(loadingItem);
+                console.error('Error uploading image:', error);
+                alert('Upload failed. Please try again.');
             });
         }
         
-        function insertImageToEditor(url, filename) {
-            // Get cursor position
-            const cursorPos = contentEditor.selectionStart;
-            const textBefore = contentEditor.value.substring(0, cursorPos);
-            const textAfter = contentEditor.value.substring(cursorPos);
+        // Insert image at cursor position
+        function insertImageAtCursor(imageUrl, filename) {
+            if (!contentTextarea) return;
+            
+            // Determine if we're in HTML or Markdown mode
+            // For this implementation, we'll check if the content contains HTML tags
+            const isHtmlMode = /<[a-z][\s\S]*>/i.test(contentTextarea.value);
             
             let imageCode;
-            
-            // Format based on selected content type
-            if (document.getElementById('format_markdown').checked) {
-                // Markdown format
-                imageCode = `![${filename}](${url})`;
-            } else {
+            if (isHtmlMode) {
                 // HTML format
-                imageCode = `<img src="${url}" alt="${filename}" class="content-image">`;
+                imageCode = `<img src="${imageUrl}" alt="${filename}" class="content-image">`;
+            } else {
+                // Markdown format
+                imageCode = `![${filename}](${imageUrl})`;
             }
             
-            // Insert at cursor position
-            contentEditor.value = textBefore + imageCode + textAfter;
+            // Get cursor position
+            const startPos = contentTextarea.selectionStart;
+            const endPos = contentTextarea.selectionEnd;
             
-            // Update cursor position
-            const newCursorPos = cursorPos + imageCode.length;
-            contentEditor.setSelectionRange(newCursorPos, newCursorPos);
-            contentEditor.focus();
+            // Insert image code at cursor
+            contentTextarea.value = 
+                contentTextarea.value.substring(0, startPos) + 
+                imageCode + 
+                contentTextarea.value.substring(endPos);
+            
+            // Set cursor position after inserted code
+            contentTextarea.selectionStart = startPos + imageCode.length;
+            contentTextarea.selectionEnd = startPos + imageCode.length;
+            
+            // Focus back on textarea
+            contentTextarea.focus();
         }
-    });
+    }
 </script>
-<script>
-  // Image upload handling
-  document.getElementById('image-upload').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    // Update file input label
-    const fileName = file.name;
-    document.querySelector('.custom-file-label').textContent = fileName;
-    
-    // Create FormData and send to server
-    const formData = new FormData();
-    formData.append('image', file);
-    
-    // Show loading state
-    const previewContainer = document.getElementById('image-preview-container');
-    previewContainer.classList.remove('d-none');
-    document.getElementById('image-name').textContent = 'Uploading...';
-    
-    // Upload the image
-    fetch('/admin/upload-content-image', {
-      method: 'POST',
-      body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        // Show preview
-        document.getElementById('image-preview').src = data.url;
-        document.getElementById('image-name').textContent = data.original_name;
-        
-        // Set up insert buttons
-        document.getElementById('insert-html-btn').onclick = function() {
-          insertIntoEditor(`<img src="${data.url}" alt="${data.original_name}" class="content-image">`);
-        };
-        
-        document.getElementById('insert-markdown-btn').onclick = function() {
-          insertIntoEditor(`![${data.original_name}](${data.filename})`);
-        };
-      } else {
-        alert('Upload failed: ' + (data.error || 'Unknown error'));
-        previewContainer.classList.add('d-none');
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('Upload failed. Please try again.');
-      previewContainer.classList.add('d-none');
-    });
-  });
-  
-  // Function to insert content at cursor position in the editor
-  function insertIntoEditor(text) {
-    const editor = document.getElementById('content');
-    const startPos = editor.selectionStart;
-    const endPos = editor.selectionEnd;
-    const scrollTop = editor.scrollTop;
-    
-    editor.value = editor.value.substring(0, startPos) + text + editor.value.substring(endPos);
-    editor.focus();
-    editor.selectionStart = startPos + text.length;
-    editor.selectionEnd = startPos + text.length;
-    editor.scrollTop = scrollTop;
-  }
-</script>
-
 {% endblock %}
