@@ -171,7 +171,7 @@ def post(slug):
         current_app.logger.error(f"Error rendering post content: {str(e)}")
         post.html_content = post.content
     
-    return render_template('blog/post.html', post=post, title=post.title)
+    return render_template('blog/post.html', post=post, title=post.title, html_content=post.content)
 
 @blog_bp.route('/category/<slug>')
 def category(slug):
