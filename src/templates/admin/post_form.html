@@ -55,6 +55,7 @@
             <div class="content-image-upload">
                 <div class="upload-container">
                     <input type="file" id="content_image_file" accept="image/*">
+                    <div id="upload_status" class="upload-status"></div>
                 </div>
                 <small>Upload images to use in your content. Supported formats: JPG, PNG, GIF, WebP</small>
                 <div id="uploaded_images_panel" class="uploaded-images-panel">
@@ -155,6 +156,23 @@
         align-items: center;
         gap: 10px;
         margin-bottom: 10px;
+    }
+    
+    .upload-status {
+        margin-left: 10px;
+        font-size: 14px;
+    }
+    
+    .upload-status.success {
+        color: #4CAF50;
+    }
+    
+    .upload-status.error {
+        color: #f44336;
+    }
+    
+    .upload-status.loading {
+        color: #2196F3;
     }
     
     .uploaded-images-panel {
@@ -321,13 +339,19 @@
         // Get DOM elements
         const contentImageInput = document.getElementById('content_image_file');
         const uploadedImagesList = document.getElementById('uploaded_images_list');
+        const uploadStatus = document.getElementById('upload_status');
+        
+        // Get CSRF token from the form
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
         
         // Log elements to verify they're found
         console.log("Content image input:", contentImageInput);
         console.log("Uploaded images list:", uploadedImagesList);
+        console.log("Upload status:", uploadStatus);
+        console.log("CSRF token found:", csrfToken ? "Yes" : "No");
         
         // Handle file selection
-        if (contentImageInput && uploadedImagesList) {
+        if (contentImageInput && uploadedImagesList && uploadStatus) {
             contentImageInput.addEventListener('change', function() {
                 console.log("File input changed");
                 
@@ -335,27 +359,41 @@
                     const file = this.files[0];
                     console.log("Selected file:", file.name);
                     
+                    // Show loading status
+                    uploadStatus.textContent = "Uploading...";
+                    uploadStatus.className = "upload-status loading";
+                    
                     // Create a FormData object
                     const formData = new FormData();
                     formData.append('file', file);
+                    formData.append('csrf_token', csrfToken); // Add CSRF token to form data
                     
-                    console.log("Uploading file...");
+                    console.log("Uploading file with CSRF token...");
                     
                     // Use the existing upload endpoint (same as featured image)
                     fetch('/admin/upload-image', {
                         method: 'POST',
-                        body: formData
+                        body: formData,
+                        headers: {
+                            'X-CSRFToken': csrfToken // Also add CSRF token as header for extra security
+                        }
                     })
                     .then(response => {
                         console.log("Upload response status:", response.status);
                         console.log("Upload response OK:", response.ok);
+                        
                         if (!response.ok) {
                             throw new Error('Network response was not ok: ' + response.status);
                         }
+                        
                         return response.json();
                     })
                     .then(data => {
                         console.log("Upload response data:", data);
+                        
+                        // Show success status
+                        uploadStatus.textContent = "Upload successful!";
+                        uploadStatus.className = "upload-status success";
                         
                         // Try to handle different response formats
                         let success = false;
@@ -399,39 +437,81 @@
                                 noImagesMessage.remove();
                             }
                             
-                            // Create HTML and Markdown versions of the image code
-                            const htmlCode = `<div class="blog-post-content-image-container"><img src="${imageUrl}" alt="${file.name}" class="blog-post-content-image"></div>`;
-                            const markdownCode = `![${file.name}](${imageUrl})`;
-                            
-                            // Create a new image item element
-                            const imageItem = document.createElement('div');
-                            imageItem.className = 'uploaded-image-item';
-                            imageItem.innerHTML = `
-                                <img src="${imageUrl}" alt="${file.name}" class="uploaded-image-thumbnail">
-                                <div class="uploaded-image-info">
-                                    <div class="uploaded-image-path">${imageUrl}</div>
-                                    <div class="uploaded-image-html">${htmlCode}</div>
-                                    <div class="uploaded-image-markdown">${markdownCode}</div>
-                                </div>
-                            `;
-                            
-                            // Add to the uploaded images list
-                            uploadedImagesList.prepend(imageItem);
-                            
-                            // Add click-to-copy functionality
-                            setupCopyToClipboard(imageItem.querySelector('.uploaded-image-path'));
-                            setupCopyToClipboard(imageItem.querySelector('.uploaded-image-html'));
-                            setupCopyToClipboard(imageItem.querySelector('.uploaded-image-markdown'));
-                            
-                            console.log("Image added to panel");
+                            // Ensure the URL is absolute if it starts with /
+                            if (imageUrl.startsWith('/')) {
+                                // Get the base URL (protocol + host)
+                                const baseUrl = window.location.origin;
+                                const absoluteUrl = baseUrl + imageUrl;
+                                console.log("Converted to absolute URL:", absoluteUrl);
+                                
+                                // For display purposes, we'll keep the relative URL
+                                const displayUrl = imageUrl;
+                                
+                                // Create HTML and Markdown versions of the image code
+                                const htmlCode = `<div class="blog-post-content-image-container"><img src="${displayUrl}" alt="${file.name}" class="blog-post-content-image"></div>`;
+                                const markdownCode = `![${file.name}](${displayUrl})`;
+                                
+                                // Create a new image item element
+                                const imageItem = document.createElement('div');
+                                imageItem.className = 'uploaded-image-item';
+                                imageItem.innerHTML = `
+                                    <img src="${absoluteUrl}" alt="${file.name}" class="uploaded-image-thumbnail">
+                                    <div class="uploaded-image-info">
+                                        <div class="uploaded-image-path">${displayUrl}</div>
+                                        <div class="uploaded-image-html">${htmlCode}</div>
+                                        <div class="uploaded-image-markdown">${markdownCode}</div>
+                                    </div>
+                                `;
+                                
+                                // Add to the uploaded images list
+                                uploadedImagesList.prepend(imageItem);
+                                
+                                // Add click-to-copy functionality
+                                setupCopyToClipboard(imageItem.querySelector('.uploaded-image-path'));
+                                setupCopyToClipboard(imageItem.querySelector('.uploaded-image-html'));
+                                setupCopyToClipboard(imageItem.querySelector('.uploaded-image-markdown'));
+                                
+                                console.log("Image added to panel");
+                            } else {
+                                // URL is already absolute
+                                const displayUrl = imageUrl;
+                                
+                                // Create HTML and Markdown versions of the image code
+                                const htmlCode = `<div class="blog-post-content-image-container"><img src="${displayUrl}" alt="${file.name}" class="blog-post-content-image"></div>`;
+                                const markdownCode = `![${file.name}](${displayUrl})`;
+                                
+                                // Create a new image item element
+                                const imageItem = document.createElement('div');
+                                imageItem.className = 'uploaded-image-item';
+                                imageItem.innerHTML = `
+                                    <img src="${displayUrl}" alt="${file.name}" class="uploaded-image-thumbnail">
+                                    <div class="uploaded-image-info">
+                                        <div class="uploaded-image-path">${displayUrl}</div>
+                                        <div class="uploaded-image-html">${htmlCode}</div>
+                                        <div class="uploaded-image-markdown">${markdownCode}</div>
+                                    </div>
+                                `;
+                                
+                                // Add to the uploaded images list
+                                uploadedImagesList.prepend(imageItem);
+                                
+                                // Add click-to-copy functionality
+                                setupCopyToClipboard(imageItem.querySelector('.uploaded-image-path'));
+                                setupCopyToClipboard(imageItem.querySelector('.uploaded-image-html'));
+                                setupCopyToClipboard(imageItem.querySelector('.uploaded-image-markdown'));
+                                
+                                console.log("Image added to panel");
+                            }
                         } else {
                             console.error("Upload response format not recognized:", data);
-                            alert("Upload completed but response format not recognized. Check console for details.");
+                            uploadStatus.textContent = "Upload completed but response format not recognized.";
+                            uploadStatus.className = "upload-status error";
                         }
                     })
                     .catch(error => {
                         console.error('Error uploading image:', error);
-                        alert("Upload failed. Please try again. Error: " + error.message);
+                        uploadStatus.textContent = "Upload failed: " + error.message;
+                        uploadStatus.className = "upload-status error";
                     });
                     
                     // Reset the file input for next upload
@@ -439,7 +519,7 @@
                 }
             });
         } else {
-            console.error("Could not find content image input or uploaded images list");
+            console.error("Could not find content image input, uploaded images list, or upload status element");
         }
     }
     
