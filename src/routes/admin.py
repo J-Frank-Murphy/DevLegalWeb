@@ -67,11 +67,11 @@ def upload_content_image():
     """Handle image uploads for post content"""
     if 'image' not in request.files:
         return jsonify({'error': 'No file part'}), 400
-    
+        
     file = request.files['image']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
-    
+        
     if file and allowed_file(file.filename):
         file_path = save_image(file)
         if file_path:
@@ -80,14 +80,16 @@ def upload_content_image():
             
             # Return both the full URL and the filename
             image_url = url_for('static', filename=file_path) if file_path.startswith('uploads/') else file_path
+            
             return jsonify({
                 'success': True,
                 'url': image_url,
                 'filename': filename,
                 'original_name': file.filename
             })
-    
+            
     return jsonify({'error': 'Invalid file type'}), 400
+
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
