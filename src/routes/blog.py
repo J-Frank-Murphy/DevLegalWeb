@@ -7,6 +7,8 @@ from slugify import slugify
 import os
 import markdown
 import re
+from markdown.extensions.fenced_code import FencedCodeExtension
+from markdown.extensions.tables import TableExtension
 
 # Custom markdown extension to resolve image paths
 class ImagePathExtension(markdown.Extension):
@@ -25,29 +27,39 @@ class ImagePathProcessor(markdown.treeprocessors.Treeprocessor):
         self.uploads_url_path = config['uploads_url_path']
     
     def run(self, root):
-        for img in root.iter('img'):
-            src = img.get('src')
-            if src and not src.startswith(('http://', 'https://', '/', 'data:' )):
-                # This is a relative path without leading slash, likely just a filename
-                img.set('src', f"{self.uploads_url_path}{src}")
+        try:
+            for img in root.iter('img'):
+                src = img.get('src')
+                if src and not src.startswith(('http://', 'https://', '/', 'data:' )):
+                    # This is a relative path without leading slash, likely just a filename
+                    img.set('src', f"{self.uploads_url_path}{src}")
+        except Exception as e:
+            # If any error occurs during processing, log it but don't crash
+            current_app.logger.error(f"Error processing markdown image paths: {str(e)}")
         return root
 
 def get_markdown_html(content):
-    """Convert markdown to HTML with image path resolution"""
+    """Convert markdown to HTML with image path resolution and error handling"""
+    if not content:
+        return ""
+        
     uploads_url_path = current_app.config.get('UPLOADS_URL_PATH', '/static/uploads/')
     
-    # Create markdown instance with extensions
-    md = markdown.Markdown(extensions=[
-        'markdown.extensions.fenced_code',
-        'markdown.extensions.tables',
-        ImagePathExtension(uploads_url_path=uploads_url_path)
-    ])
-    
-    # Convert markdown to HTML
-    html = md.convert(content)
-    
-    return html
-
+    try:
+        # Create markdown instance with extensions
+        md = markdown.Markdown(extensions=[
+            FencedCodeExtension(),
+            TableExtension(),
+            ImagePathExtension(uploads_url_path=uploads_url_path)
+        ])
+        
+        # Convert markdown to HTML
+        html = md.convert(content)
+        return html
+    except Exception as e:
+        # If markdown conversion fails, log the error and return the original content
+        current_app.logger.error(f"Markdown conversion error: {str(e)}")
+        return f"<p>{content}</p>"  # Fallback to displaying content as plain text
 
 # Create blueprint
 blog_bp = Blueprint('blog', __name__)
@@ -137,9 +149,17 @@ def post(slug):
     post.views += 1
     db.session.commit()
 
-    # Process markdown content if needed
+# Process markdown content if needed - with robust error handling
+try:
     if hasattr(post, 'content_format') and post.content_format == 'markdown':
         post.html_content = get_markdown_html(post.content)
+    else:
+        # For backward compatibility with existing posts
+        post.html_content = post.content
+except Exception as e:
+    # If any error occurs, log it and fall back to the original content
+    current_app.logger.error(f"Error rendering post content: {str(e)}")
+    post.html_content = post.content
     
     return render_template('blog/post.html', post=post, title=post.title)
 
