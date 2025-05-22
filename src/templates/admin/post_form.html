@@ -256,6 +256,7 @@
         margin-top: 5px;
         cursor: pointer;
         position: relative;
+        white-space: pre-wrap;
     }
     
     .uploaded-image-html:hover, .uploaded-image-markdown:hover {
@@ -348,6 +349,16 @@
         console.log("Uploaded images list:", uploadedImagesList);
         console.log("Upload status:", uploadStatus);
         console.log("CSRF token found:", csrfToken ? "Yes" : "No");
+        
+        // Function to escape HTML for display
+        function escapeHtml(html) {
+            return html
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
         
         // Handle file selection
         if (contentImageInput && uploadedImagesList && uploadStatus) {
@@ -455,13 +466,13 @@
                             const imageItem = document.createElement('div');
                             imageItem.className = 'uploaded-image-item';
                             
-                            // Set the HTML content safely
+                            // Set the HTML content safely with escaped HTML code
                             imageItem.innerHTML = `
                                 <img src="${absoluteUrl}" alt="${file.name}" class="uploaded-image-thumbnail">
                                 <div class="uploaded-image-info">
                                     <div class="uploaded-image-path">${displayUrl}</div>
-                                    <div class="uploaded-image-html">${htmlCode}</div>
-                                    <div class="uploaded-image-markdown">${markdownCode}</div>
+                                    <div class="uploaded-image-html">${escapeHtml(htmlCode)}</div>
+                                    <div class="uploaded-image-markdown">${escapeHtml(markdownCode)}</div>
                                 </div>
                             `;
                             
@@ -469,9 +480,9 @@
                             uploadedImagesList.prepend(imageItem);
                             
                             // Add click-to-copy functionality
-                            setupCopyToClipboard(imageItem.querySelector('.uploaded-image-path'));
-                            setupCopyToClipboard(imageItem.querySelector('.uploaded-image-html'));
-                            setupCopyToClipboard(imageItem.querySelector('.uploaded-image-markdown'));
+                            setupCopyToClipboard(imageItem.querySelector('.uploaded-image-path'), displayUrl);
+                            setupCopyToClipboard(imageItem.querySelector('.uploaded-image-html'), htmlCode);
+                            setupCopyToClipboard(imageItem.querySelector('.uploaded-image-markdown'), markdownCode);
                             
                             console.log("Image added to panel");
                         } else {
@@ -495,16 +506,16 @@
         }
     }
     
-    function setupCopyToClipboard(element) {
+    function setupCopyToClipboard(element, originalText) {
         if (!element) return;
         
         element.addEventListener('click', function() {
-            // Get the text content
-            const text = this.textContent;
+            // Use the original text if provided, otherwise use the displayed text
+            const textToCopy = originalText || this.textContent;
             
             // Create a temporary textarea element
             const textarea = document.createElement('textarea');
-            textarea.value = text;
+            textarea.value = textToCopy;
             document.body.appendChild(textarea);
             
             // Select and copy the text
