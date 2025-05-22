@@ -97,65 +97,28 @@ def upload_image():
 @admin_bp.route('/upload-content-image', methods=['POST'])
 @login_required
 def upload_content_image():
-    """Handle image uploads for post content"""
-    current_app.logger.info("=== Starting content image upload ===")
-    current_app.logger.info(f"Request method: {request.method}")
-    current_app.logger.info(f"Request files: {request.files}")
-    current_app.logger.info(f"Request form: {request.form}")
+    """Handle content image uploads for post content"""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
     
-    try:
-        if 'image' not in request.files:
-            current_app.logger.error("No file part in request")
-            return jsonify({'error': 'No file part'}), 400
-            
-        file = request.files['image']
-        current_app.logger.info(f"File name: {file.filename}")
-        current_app.logger.info(f"File content type: {file.content_type}")
-        
-        if file.filename == '':
-            current_app.logger.error("No selected file")
-            return jsonify({'error': 'No selected file'}), 400
-            
-        if file and allowed_file(file.filename):
-            current_app.logger.info("File is allowed, saving...")
-            file_path = save_image(file)
-            
-            if file_path:
-                # Get just the filename part for simplified markdown references
-                filename = os.path.basename(file_path)
-                current_app.logger.info(f"Filename: {filename}")
-                
-                # Return both the full URL and the filename
-                # Make sure we're returning the complete URL, not just the relative path
-                if file_path.startswith('/'):
-                    # Absolute path, use as is
-                    image_url = file_path
-                    current_app.logger.info(f"Using absolute path: {image_url}")
-                else:
-                    # Relative path, construct URL
-                    image_url = url_for('static', filename=file_path, _external=True)
-                    current_app.logger.info(f"Constructed URL: {image_url}")
-                
-                response_data = {
-                    'success': True,
-                    'url': image_url,
-                    'filename': filename,
-                    'original_name': file.filename
-                }
-                current_app.logger.info(f"Response data: {response_data}")
-                return jsonify(response_data)
-            else:
-                current_app.logger.error("Failed to save image")
-                return jsonify({'error': 'Failed to save image'}), 500
-                
-        current_app.logger.error(f"Invalid file type: {file.filename}")
-        return jsonify({'error': 'Invalid file type'}), 400
-        
-    except Exception as e:
-        # Log the full exception with traceback
-        current_app.logger.error(f"Exception during upload: {str(e)}")
-        current_app.logger.error(traceback.format_exc())
-        return jsonify({'error': str(e)}), 500
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    if file and allowed_file(file.filename):
+        file_path = save_image(file)
+        if file_path:
+            # Return both the full URL and the filename for different insertion formats
+            return jsonify({
+                'success': True,
+                'url': url_for('static', filename=file_path, _external=True),
+                'relative_url': url_for('static', filename=file_path),
+                'filename': os.path.basename(file_path)
+            })
+    
+    return jsonify({'error': 'Invalid file type'}), 400
+
 
 # Rest of your admin.py file...
 @admin_bp.route('/login', methods=['GET', 'POST'])
