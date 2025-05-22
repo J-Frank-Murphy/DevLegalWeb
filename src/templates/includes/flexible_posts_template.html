@@ -10,6 +10,7 @@
         <div class="blog-posts">
             {% if posts %}
                 {% for post in posts %}
+                    {% if post.slug != 'our-privacy-policy' %}
                     <div class="blog-post">
                         {% if current_user.is_authenticated %}
                             <div class="admin-post-controls" style="position: absolute; top: 10px; right: 10px; z-index: 10; display: flex; gap: 5px;">
@@ -36,6 +37,7 @@
                             <a href="{{ url_for('blog.post', slug=post.slug) }}" class="read-more">Read More</a>
                         </div>
                     </div>
+                    {% endif %}
                 {% endfor %}
             {% else %}
                 <div class="no-posts-message">
