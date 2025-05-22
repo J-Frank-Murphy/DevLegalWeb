@@ -65,30 +65,36 @@ def upload_image():
 @login_required
 def upload_content_image():
     """Handle image uploads for post content"""
-    if 'image' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-        
-    file = request.files['image']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-        
-    if file and allowed_file(file.filename):
-        file_path = save_image(file)
-        if file_path:
-            # Get just the filename part for simplified markdown references
-            filename = os.path.basename(file_path)
+    try:
+        if 'image' not in request.files:
+            return jsonify({'error': 'No file part'}), 400
             
-            # Return both the full URL and the filename
-            image_url = url_for('static', filename=file_path) if file_path.startswith('uploads/') else file_path
+        file = request.files['image']
+        if file.filename == '':
+            return jsonify({'error': 'No selected file'}), 400
             
-            return jsonify({
-                'success': True,
-                'url': image_url,
-                'filename': filename,
-                'original_name': file.filename
-            })
-            
-    return jsonify({'error': 'Invalid file type'}), 400
+        if file and allowed_file(file.filename):
+            file_path = save_image(file)
+            if file_path:
+                # Get just the filename part for simplified markdown references
+                filename = os.path.basename(file_path)
+                
+                # Return both the full URL and the filename
+                # Make sure we're returning the complete URL, not just the relative path
+                image_url = url_for('static', filename=file_path, _external=True)
+                
+                return jsonify({
+                    'success': True,
+                    'url': image_url,
+                    'filename': filename,
+                    'original_name': file.filename
+                })
+                
+        return jsonify({'error': 'Invalid file type'}), 400
+    except Exception as e:
+        current_app.logger.error(f"Image upload error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
