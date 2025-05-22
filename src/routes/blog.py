@@ -149,17 +149,17 @@ def post(slug):
     post.views += 1
     db.session.commit()
 
-# Process markdown content if needed - with robust error handling
-try:
-    if hasattr(post, 'content_format') and post.content_format == 'markdown':
-        post.html_content = get_markdown_html(post.content)
-    else:
-        # For backward compatibility with existing posts
+    # Process markdown content if needed - with robust error handling
+    try:
+        if hasattr(post, 'content_format') and post.content_format == 'markdown':
+            post.html_content = get_markdown_html(post.content)
+        else:
+            # For backward compatibility with existing posts
+            post.html_content = post.content
+    except Exception as e:
+        # If any error occurs, log it and fall back to the original content
+        current_app.logger.error(f"Error rendering post content: {str(e)}")
         post.html_content = post.content
-except Exception as e:
-    # If any error occurs, log it and fall back to the original content
-    current_app.logger.error(f"Error rendering post content: {str(e)}")
-    post.html_content = post.content
     
     return render_template('blog/post.html', post=post, title=post.title)
 
