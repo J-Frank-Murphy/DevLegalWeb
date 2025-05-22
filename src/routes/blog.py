@@ -5,6 +5,49 @@ from src.models import db
 from datetime import datetime
 from slugify import slugify
 import os
+import markdown
+import re
+
+# Custom markdown extension to resolve image paths
+class ImagePathExtension(markdown.Extension):
+    def __init__(self, **kwargs):
+        self.config = {
+            'uploads_url_path': ['/static/uploads/', 'URL path to uploads directory']
+        }
+        super(ImagePathExtension, self).__init__(**kwargs)
+    
+    def extendMarkdown(self, md):
+        md.treeprocessors.register(ImagePathProcessor(md, self.getConfigs()), 'imagepath', 175)
+
+class ImagePathProcessor(markdown.treeprocessors.Treeprocessor):
+    def __init__(self, md, config):
+        super(ImagePathProcessor, self).__init__(md)
+        self.uploads_url_path = config['uploads_url_path']
+    
+    def run(self, root):
+        for img in root.iter('img'):
+            src = img.get('src')
+            if src and not src.startswith(('http://', 'https://', '/', 'data:' )):
+                # This is a relative path without leading slash, likely just a filename
+                img.set('src', f"{self.uploads_url_path}{src}")
+        return root
+
+def get_markdown_html(content):
+    """Convert markdown to HTML with image path resolution"""
+    uploads_url_path = current_app.config.get('UPLOADS_URL_PATH', '/static/uploads/')
+    
+    # Create markdown instance with extensions
+    md = markdown.Markdown(extensions=[
+        'markdown.extensions.fenced_code',
+        'markdown.extensions.tables',
+        ImagePathExtension(uploads_url_path=uploads_url_path)
+    ])
+    
+    # Convert markdown to HTML
+    html = md.convert(content)
+    
+    return html
+
 
 # Create blueprint
 blog_bp = Blueprint('blog', __name__)
