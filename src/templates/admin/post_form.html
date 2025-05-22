@@ -1,52 +1,61 @@
 {% extends "admin/base_layout.html" %}
-
 {% block title %}{% if post %}Edit Post{% else %}New Post{% endif %} - Dev Legal{% endblock %}
-
 {% block header_title %}{% if post %}Edit Post{% else %}New Post{% endif %}{% endblock %}
-
 {% block content %}
 <div class="admin-content">
     <form method="POST" enctype="multipart/form-data" class="post-form">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-        
+        {% if post %}
+        <input type="hidden" name="post_id" value="{{ post.id }}"/>
+        {% endif %}
         <div class="form-group">
             <label for="title">Title</label>
             <input type="text" id="title" name="title" value="{{ post.title if post else '' }}" required>
         </div>
-        
         <div class="form-group">
             <label for="slug">Slug</label>
             <input type="text" id="slug" name="slug" value="{{ post.slug if post else '' }}">
             <small>Leave empty to auto-generate from title</small>
         </div>
-        
         <div class="form-group">
             <label for="post_date">Publication Date</label>
             <input type="datetime-local" id="post_date" name="post_date" value="{{ post.created_at.strftime('%Y-%m-%dT%H:%M') if post and post.created_at else '' }}">
             <small>Optional. If not specified, current date and time will be used.</small>
         </div>
-        
         <div class="form-group">
             <label for="excerpt">Excerpt</label>
             <textarea id="excerpt" name="excerpt" rows="3">{{ post.excerpt if post else '' }}</textarea>
         </div>
-        
         <div class="form-group format-toggle">
             <label>Content Format:</label>
             <div class="toggle-container">
                 <input type="radio" id="format_html" name="content_format" value="html" {% if not post or not post.content_format or post.content_format == 'html' %}checked{% endif %}>
                 <label for="format_html">HTML</label>
-                
                 <input type="radio" id="format_markdown" name="content_format" value="markdown" {% if post and post.content_format == 'markdown' %}checked{% endif %}>
                 <label for="format_markdown">Markdown</label>
             </div>
             <small class="format-hint html-hint {% if post and post.content_format == 'markdown' %}hidden{% endif %}">HTML markup is allowed</small>
             <small class="format-hint markdown-hint {% if not post or not post.content_format or post.content_format == 'html' %}hidden{% endif %}">Markdown formatting will be converted to HTML when displayed</small>
         </div>
-        
         <div class="form-group">
             <label for="content">Content</label>
             <textarea id="content" name="content" rows="15">{{ post.content if post else '' }}</textarea>
+        </div>
+        
+        <!-- Additional Images Section -->
+        <div class="form-group">
+            <label>Additional Images</label>
+            <div id="content-images-container">
+                <div class="image-upload-area">
+                    <input type="file" id="content_image" name="content_image" accept="image/*">
+                    <div class="upload-instructions">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p>Upload an image to insert in your content</p>
+                        <small>Supported formats: JPG, PNG, GIF, WebP</small>
+                    </div>
+                </div>
+                <div id="upload-status" class="upload-status"></div>
+            </div>
         </div>
         
         <div class="form-group">
@@ -58,7 +67,6 @@
                 {% endfor %}
             </select>
         </div>
-        
         <div class="form-group">
             <label>Tags</label>
             <div class="tag-checkboxes">
@@ -70,13 +78,11 @@
                 {% endfor %}
             </div>
         </div>
-        
         <div class="form-group">
             <label for="featured_image_url">Featured Image URL</label>
             <input type="text" id="featured_image_url" name="featured_image_url" value="{{ post.featured_image if post else '' }}">
             <small>Enter a URL or upload an image below</small>
         </div>
-        
         <div class="form-group">
             <label for="featured_image_file">Upload Featured Image</label>
             <input type="file" id="featured_image_file" name="featured_image_file" accept="image/*">
@@ -88,43 +94,107 @@
             </div>
             {% endif %}
         </div>
-        
         <div class="form-group checkbox-group">
             <input type="checkbox" id="published" name="published" {% if post and post.published %}checked{% endif %}>
             <label for="published">Published</label>
         </div>
-        
         <div class="form-group checkbox-group">
             <input type="checkbox" id="comments_enabled" name="comments_enabled" {% if not post or post.comments_enabled %}checked{% endif %}>
             <label for="comments_enabled">Enable Comments</label>
         </div>
-        
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">{% if post %}Update{% else %}Create{% endif %} Post</button>
             <a href="{{ url_for('admin.posts') }}" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 </div>
-
 <style>
     .format-toggle {
         margin-bottom: 10px;
     }
-    
     .toggle-container {
         display: flex;
         gap: 20px;
         margin-bottom: 5px;
     }
-    
     .format-hint {
         display: block;
         font-size: 0.8em;
         color: #666;
     }
-    
     .hidden {
         display: none;
+    }
+    
+    /* Image upload styling */
+    .image-upload-area {
+        border: 2px dashed #ccc;
+        border-radius: 5px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .image-upload-area input[type="file"] {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+    
+    .image-upload-area.highlight {
+        border-color: #3498db;
+        background-color: rgba(52, 152, 219, 0.1);
+    }
+    
+    .upload-instructions {
+        color: #666;
+    }
+    
+    .upload-instructions i {
+        font-size: 2rem;
+        margin-bottom: 10px;
+        color: #3498db;
+    }
+    
+    .upload-status {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 4px;
+        display: none;
+    }
+    
+    .upload-status.success {
+        display: block;
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .upload-status.error {
+        display: block;
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .insert-btn {
+        margin-left: 10px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .insert-btn:hover {
+        background-color: #2980b9;
     }
 </style>
 {% endblock %}
@@ -171,6 +241,93 @@
                     htmlHint.classList.add('hidden');
                 }
             });
+        }
+        
+        // Image upload handling
+        const imageInput = document.getElementById('content_image');
+        const uploadStatus = document.getElementById('upload-status');
+        const contentEditor = document.getElementById('content');
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        
+        // Handle file selection
+        if (imageInput) {
+            imageInput.addEventListener('change', function(e) {
+                if (this.files.length > 0) {
+                    uploadImage(this.files[0]);
+                }
+            });
+        }
+        
+        function uploadImage(file) {
+            // Create FormData
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            // Show loading state
+            uploadStatus.className = 'upload-status';
+            uploadStatus.textContent = 'Uploading image...';
+            uploadStatus.style.display = 'block';
+            
+            // Upload file
+            fetch('/admin/upload-content-image', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show success message with insert button
+                    uploadStatus.className = 'upload-status success';
+                    uploadStatus.innerHTML = `
+                        Image uploaded successfully: ${data.filename}
+                        <button type="button" class="insert-btn" id="insert-image-btn">
+                            Insert into content
+                        </button>
+                    `;
+                    
+                    // Add click handler for insert button
+                    document.getElementById('insert-image-btn').addEventListener('click', function() {
+                        insertImageToEditor(data.url, data.filename);
+                    });
+                } else {
+                    // Show error message
+                    uploadStatus.className = 'upload-status error';
+                    uploadStatus.textContent = 'Error uploading image: ' + (data.error || 'Unknown error');
+                }
+            })
+            .catch(error => {
+                uploadStatus.className = 'upload-status error';
+                uploadStatus.textContent = 'Error uploading image: ' + error;
+            });
+        }
+        
+        function insertImageToEditor(url, filename) {
+            // Get cursor position
+            const cursorPos = contentEditor.selectionStart;
+            const textBefore = contentEditor.value.substring(0, cursorPos);
+            const textAfter = contentEditor.value.substring(cursorPos);
+            
+            let imageCode;
+            
+            // Format based on selected content type
+            if (document.getElementById('format_markdown').checked) {
+                // Markdown format
+                imageCode = `![${filename}](${url})`;
+            } else {
+                // HTML format
+                imageCode = `<img src="${url}" alt="${filename}" class="content-image">`;
+            }
+            
+            // Insert at cursor position
+            contentEditor.value = textBefore + imageCode + textAfter;
+            
+            // Update cursor position
+            const newCursorPos = cursorPos + imageCode.length;
+            contentEditor.setSelectionRange(newCursorPos, newCursorPos);
+            contentEditor.focus();
         }
     });
 </script>
