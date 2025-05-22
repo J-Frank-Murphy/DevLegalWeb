@@ -136,6 +136,10 @@ def post(slug):
     # Increment view count
     post.views += 1
     db.session.commit()
+
+    # Process markdown content if needed
+    if hasattr(post, 'content_format') and post.content_format == 'markdown':
+        post.html_content = get_markdown_html(post.content)
     
     return render_template('blog/post.html', post=post, title=post.title)
 
