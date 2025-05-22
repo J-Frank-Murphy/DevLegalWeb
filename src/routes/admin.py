@@ -8,6 +8,7 @@ from src.models import db
 import os
 from datetime import datetime
 import uuid
+import re
 
 # Create blueprint
 admin_bp = Blueprint('admin', __name__)
@@ -45,7 +46,6 @@ def upload_image():
         return jsonify({'error': 'No file part'}), 400
     
     file = request.files['file']
-    
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
     
@@ -60,6 +60,34 @@ def upload_image():
     
     return jsonify({'error': 'Invalid file type'}), 400
 
+# New route for handling content image uploads
+@admin_bp.route('/upload-content-image', methods=['POST'])
+@login_required
+def upload_content_image():
+    """Handle image uploads for post content"""
+    if 'image' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    if file and allowed_file(file.filename):
+        file_path = save_image(file)
+        if file_path:
+            # Get just the filename part for simplified markdown references
+            filename = os.path.basename(file_path)
+            
+            # Return both the full URL and the filename
+            image_url = url_for('static', filename=file_path) if file_path.startswith('uploads/') else file_path
+            return jsonify({
+                'success': True,
+                'url': image_url,
+                'filename': filename,
+                'original_name': file.filename
+            })
+    
+    return jsonify({'error': 'Invalid file type'}), 400
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -130,9 +158,7 @@ def posts():
     
     posts = Post.query.order_by(Post.created_at.desc()).paginate(page=page, per_page=per_page)
     
-    return render_template('admin/posts.html',
-                          title="Manage Posts",
-                          posts=posts)
+    return render_template('admin/posts.html', title="Manage Posts", posts=posts)
 
 @admin_bp.route('/post/new', methods=['GET', 'POST'])
 @login_required
@@ -157,10 +183,7 @@ def new_post():
         # Validate required fields
         if not title or not content or not category_id:
             flash('Title, content, and category are required.', 'error')
-            return render_template('admin/post_form.html',
-                                  title="New Post",
-                                  categories=categories,
-                                  tags=tags)
+            return render_template('admin/post_form.html', title="New Post", categories=categories, tags=tags)
         
         # Handle featured image (file upload takes precedence over URL)
         featured_image = featured_image_url
@@ -203,10 +226,7 @@ def new_post():
         flash('Post created successfully!', 'success')
         return redirect(url_for('admin.posts'))
     
-    return render_template('admin/post_form.html',
-                          title="New Post",
-                          categories=categories,
-                          tags=tags)
+    return render_template('admin/post_form.html', title="New Post", categories=categories, tags=tags)
 
 @admin_bp.route('/post/edit/<int:post_id>', methods=['GET', 'POST'])
 @login_required
@@ -241,16 +261,12 @@ def edit_post(post_id):
             if file and file.filename:
                 file_path = save_image(file)
                 if file_path:
-                    post.featured_image = file_path
-                    # If a new file is uploaded, it takes precedence over the URL
-                else:
-                    # If file upload fails, use the URL
-                    post.featured_image = featured_image_url
+                    post.featured_image = file_path  # If a new file is uploaded, it takes precedence over the URL
             else:
-                # If no file is uploaded, use the URL
+                # If file upload fails, use the URL
                 post.featured_image = featured_image_url
         else:
-            # If no file field in request, use the URL
+            # If no file is uploaded, use the URL
             post.featured_image = featured_image_url
         
         # Update tags
@@ -262,15 +278,10 @@ def edit_post(post_id):
                 post.tags.append(tag)
         
         db.session.commit()
-        
         flash('Post updated successfully!', 'success')
         return redirect(url_for('admin.posts'))
     
-    return render_template('admin/post_form.html',
-                          title="Edit Post",
-                          post=post,
-                          categories=categories,
-                          tags=tags)
+    return render_template('admin/post_form.html', title="Edit Post", post=post, categories=categories, tags=tags)
 
 @admin_bp.route('/post/delete/<int:post_id>', methods=['POST'])
 @login_required
@@ -289,10 +300,7 @@ def delete_post(post_id):
 def categories():
     """Manage categories"""
     categories = Category.query.all()
-    
-    return render_template('admin/categories.html',
-                          title="Manage Categories",
-                          categories=categories)
+    return render_template('admin/categories.html', title="Manage Categories", categories=categories)
 
 @admin_bp.route('/category/new', methods=['GET', 'POST'])
 @login_required
@@ -305,22 +313,16 @@ def new_category():
         
         if not name:
             flash('Category name is required.', 'error')
-            return redirect(url_for('admin.new_category'))
+            return render_template('admin/category_form.html', title="New Category")
         
-        category = Category(
-            name=name,
-            slug=slug,
-            description=description
-        )
-        
+        category = Category(name=name, slug=slug, description=description)
         db.session.add(category)
         db.session.commit()
         
         flash('Category created successfully!', 'success')
         return redirect(url_for('admin.categories'))
     
-    return render_template('admin/category_form.html',
-                          title="New Category")
+    return render_template('admin/category_form.html', title="New Category")
 
 @admin_bp.route('/category/edit/<int:category_id>', methods=['GET', 'POST'])
 @login_required
@@ -334,13 +336,10 @@ def edit_category(category_id):
         category.description = request.form.get('description')
         
         db.session.commit()
-        
         flash('Category updated successfully!', 'success')
         return redirect(url_for('admin.categories'))
     
-    return render_template('admin/category_form.html',
-                          title="Edit Category",
-                          category=category)
+    return render_template('admin/category_form.html', title="Edit Category", category=category)
 
 @admin_bp.route('/category/delete/<int:category_id>', methods=['POST'])
 @login_required
@@ -364,10 +363,7 @@ def delete_category(category_id):
 def tags():
     """Manage tags"""
     tags = Tag.query.all()
-    
-    return render_template('admin/tags.html',
-                          title="Manage Tags",
-                          tags=tags)
+    return render_template('admin/tags.html', title="Manage Tags", tags=tags)
 
 @admin_bp.route('/tag/new', methods=['GET', 'POST'])
 @login_required
@@ -379,21 +375,16 @@ def new_tag():
         
         if not name:
             flash('Tag name is required.', 'error')
-            return redirect(url_for('admin.new_tag'))
+            return render_template('admin/tag_form.html', title="New Tag")
         
-        tag = Tag(
-            name=name,
-            slug=slug
-        )
-        
+        tag = Tag(name=name, slug=slug)
         db.session.add(tag)
         db.session.commit()
         
         flash('Tag created successfully!', 'success')
         return redirect(url_for('admin.tags'))
     
-    return render_template('admin/tag_form.html',
-                          title="New Tag")
+    return render_template('admin/tag_form.html', title="New Tag")
 
 @admin_bp.route('/tag/edit/<int:tag_id>', methods=['GET', 'POST'])
 @login_required
@@ -406,13 +397,10 @@ def edit_tag(tag_id):
         tag.slug = request.form.get('slug')
         
         db.session.commit()
-        
         flash('Tag updated successfully!', 'success')
         return redirect(url_for('admin.tags'))
     
-    return render_template('admin/tag_form.html',
-                          title="Edit Tag",
-                          tag=tag)
+    return render_template('admin/tag_form.html', title="Edit Tag", tag=tag)
 
 @admin_bp.route('/tag/delete/<int:tag_id>', methods=['POST'])
 @login_required
@@ -435,9 +423,7 @@ def comments():
     
     comments = Comment.query.order_by(Comment.created_at.desc()).paginate(page=page, per_page=per_page)
     
-    return render_template('admin/comments.html',
-                          title="Manage Comments",
-                          comments=comments)
+    return render_template('admin/comments.html', title="Manage Comments", comments=comments)
 
 @admin_bp.route('/comment/approve/<int:comment_id>', methods=['POST'])
 @login_required
