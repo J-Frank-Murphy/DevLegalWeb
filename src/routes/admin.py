@@ -9,6 +9,7 @@ import os
 from datetime import datetime
 import uuid
 import re
+import traceback
 
 # Create blueprint
 admin_bp = Blueprint('admin', __name__)
@@ -20,44 +21,76 @@ def allowed_file(filename):
 
 def save_image(file):
     """Save an uploaded image and return the path"""
+    current_app.logger.info("=== Starting save_image function ===")
+    current_app.logger.info(f"File: {file.filename if file else 'None'}")
+    
     if file and allowed_file(file.filename):
         # Generate a secure filename with a unique identifier
         filename = secure_filename(file.filename)
         unique_filename = f"{uuid.uuid4().hex}_{filename}"
+        current_app.logger.info(f"Generated unique filename: {unique_filename}")
         
         # Use the app's configured upload folder (which will be the persistent disk on Render)
         uploads_dir = current_app.config['UPLOAD_FOLDER']
+        current_app.logger.info(f"Upload directory: {uploads_dir}")
+        current_app.logger.info(f"Directory exists: {os.path.exists(uploads_dir)}")
+        
         os.makedirs(uploads_dir, exist_ok=True)
+        current_app.logger.info(f"Directory created/verified")
         
         # Save the file to the configured upload folder
         file_path = os.path.join(uploads_dir, unique_filename)
-        file.save(file_path)
+        current_app.logger.info(f"Full file path: {file_path}")
+        
+        try:
+            file.save(file_path)
+            current_app.logger.info(f"File saved successfully")
+            current_app.logger.info(f"File exists after save: {os.path.exists(file_path)}")
+        except Exception as e:
+            current_app.logger.error(f"Error saving file: {str(e)}")
+            current_app.logger.error(traceback.format_exc())
+            return None
         
         # Return the relative path using the configured URL path
-        return f"{current_app.config['UPLOADS_URL_PATH'].strip('/')}/{unique_filename}"
+        relative_path = f"{current_app.config['UPLOADS_URL_PATH'].strip('/')}/{unique_filename}"
+        current_app.logger.info(f"Returning relative path: {relative_path}")
+        return relative_path
     
+    current_app.logger.error(f"File validation failed: {file.filename if file else 'None'}")
     return None
 
 @admin_bp.route('/upload-image', methods=['POST'])
 @login_required
 def upload_image():
     """Handle image uploads from Quill editor"""
+    current_app.logger.info("=== Starting Quill image upload ===")
+    current_app.logger.info(f"Request files: {request.files}")
+    
     if 'file' not in request.files:
+        current_app.logger.error("No file part in request")
         return jsonify({'error': 'No file part'}), 400
     
     file = request.files['file']
+    current_app.logger.info(f"File name: {file.filename}")
+    
     if file.filename == '':
+        current_app.logger.error("No selected file")
         return jsonify({'error': 'No selected file'}), 400
     
     if file and allowed_file(file.filename):
+        current_app.logger.info("File is allowed, saving...")
         file_path = save_image(file)
         if file_path:
             # Return the URL for the uploaded image in Quill format
+            result_url = url_for('static', filename=file_path) if file_path.startswith('uploads/') else file_path
+            current_app.logger.info(f"Returning URL: {result_url}")
+            
             return jsonify({
                 'success': True,
-                'url': url_for('static', filename=file_path) if file_path.startswith('uploads/') else file_path
+                'url': result_url
             })
     
+    current_app.logger.error("Invalid file type or save failed")
     return jsonify({'error': 'Invalid file type'}), 400
 
 # New route for handling content image uploads
@@ -65,38 +98,66 @@ def upload_image():
 @login_required
 def upload_content_image():
     """Handle image uploads for post content"""
+    current_app.logger.info("=== Starting content image upload ===")
+    current_app.logger.info(f"Request method: {request.method}")
+    current_app.logger.info(f"Request files: {request.files}")
+    current_app.logger.info(f"Request form: {request.form}")
+    
     try:
         if 'image' not in request.files:
+            current_app.logger.error("No file part in request")
             return jsonify({'error': 'No file part'}), 400
             
         file = request.files['image']
+        current_app.logger.info(f"File name: {file.filename}")
+        current_app.logger.info(f"File content type: {file.content_type}")
+        
         if file.filename == '':
+            current_app.logger.error("No selected file")
             return jsonify({'error': 'No selected file'}), 400
             
         if file and allowed_file(file.filename):
+            current_app.logger.info("File is allowed, saving...")
             file_path = save_image(file)
+            
             if file_path:
                 # Get just the filename part for simplified markdown references
                 filename = os.path.basename(file_path)
+                current_app.logger.info(f"Filename: {filename}")
                 
                 # Return both the full URL and the filename
                 # Make sure we're returning the complete URL, not just the relative path
-                image_url = url_for('static', filename=file_path, _external=True)
+                if file_path.startswith('/'):
+                    # Absolute path, use as is
+                    image_url = file_path
+                    current_app.logger.info(f"Using absolute path: {image_url}")
+                else:
+                    # Relative path, construct URL
+                    image_url = url_for('static', filename=file_path, _external=True)
+                    current_app.logger.info(f"Constructed URL: {image_url}")
                 
-                return jsonify({
+                response_data = {
                     'success': True,
                     'url': image_url,
                     'filename': filename,
                     'original_name': file.filename
-                })
+                }
+                current_app.logger.info(f"Response data: {response_data}")
+                return jsonify(response_data)
+            else:
+                current_app.logger.error("Failed to save image")
+                return jsonify({'error': 'Failed to save image'}), 500
                 
+        current_app.logger.error(f"Invalid file type: {file.filename}")
         return jsonify({'error': 'Invalid file type'}), 400
+        
     except Exception as e:
-        current_app.logger.error(f"Image upload error: {str(e)}")
+        # Log the full exception with traceback
+        current_app.logger.error(f"Exception during upload: {str(e)}")
+        current_app.logger.error(traceback.format_exc())
         return jsonify({'error': str(e)}), 500
 
-
-
+# Rest of your admin.py file...
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
     """Admin login page"""
