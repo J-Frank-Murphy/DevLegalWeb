@@ -33,16 +33,16 @@
         
         <!-- Content Image Upload Section -->
         <div class="form-group">
-            <label>Content Images</label>
+            <label>Content Image</label>
             <div class="content-image-upload">
-                <div class="upload-area" id="content-image-dropzone">
-                    <p>Drag & drop images here or click to upload</p>
-                    <input type="file" id="content-image-input" accept="image/*" style="display: none;">
+                <div class="upload-container">
+                    <input type="file" id="content_image_file" accept="image/*">
+                    <button type="button" id="insert_content_image" class="btn btn-secondary" disabled>Insert Image at Cursor</button>
                 </div>
-                <div class="upload-preview" id="content-image-preview">
-                    <!-- Uploaded images will appear here -->
+                <div id="content_image_preview" class="image-preview">
+                    <!-- Preview will appear here -->
                 </div>
-                <small>Upload images to insert into your content. Supported formats: JPG, PNG, GIF, WebP</small>
+                <small>Upload an image to insert into your content. Supported formats: JPG, PNG, GIF, WebP</small>
             </div>
         </div>
         
@@ -109,81 +109,23 @@
         margin-bottom: 20px;
     }
     
-    .upload-area {
-        border: 2px dashed #ccc;
-        border-radius: 5px;
-        padding: 25px;
-        text-align: center;
-        cursor: pointer;
-        margin-bottom: 10px;
-        background-color: #f9f9f9;
-        transition: all 0.3s ease;
-    }
-    
-    .upload-area:hover, .upload-area.dragover {
-        border-color: #3498db;
-        background-color: #f0f8ff;
-    }
-    
-    .upload-preview {
+    .upload-container {
         display: flex;
-        flex-wrap: wrap;
+        align-items: center;
         gap: 10px;
-        margin-top: 15px;
+        margin-bottom: 10px;
     }
     
-    .image-item {
-        position: relative;
-        width: 150px;
+    .image-preview {
+        margin-top: 10px;
+        max-width: 300px;
+    }
+    
+    .image-preview img {
+        max-width: 100%;
         border: 1px solid #ddd;
         border-radius: 4px;
         padding: 5px;
-        background: white;
-    }
-    
-    .image-item img {
-        width: 100%;
-        height: 100px;
-        object-fit: cover;
-        border-radius: 3px;
-        display: block;
-    }
-    
-    .image-item .image-name {
-        font-size: 12px;
-        margin-top: 5px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-    
-    .image-item .image-actions {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 5px;
-    }
-    
-    .image-item .image-actions button {
-        border: none;
-        background: #f0f0f0;
-        padding: 3px 8px;
-        border-radius: 3px;
-        cursor: pointer;
-        font-size: 12px;
-    }
-    
-    .image-item .image-actions button.insert-btn {
-        background: #3498db;
-        color: white;
-    }
-    
-    .image-item .image-actions button.delete-btn {
-        background: #e74c3c;
-        color: white;
-    }
-    
-    .image-item .image-actions button:hover {
-        opacity: 0.8;
     }
 </style>
 {% endblock %}
@@ -215,122 +157,61 @@
     });
     
     function setupContentImageUpload() {
-        const dropzone = document.getElementById('content-image-dropzone');
-        const fileInput = document.getElementById('content-image-input');
-        const preview = document.getElementById('content-image-preview');
+        const contentImageInput = document.getElementById('content_image_file');
+        const insertButton = document.getElementById('insert_content_image');
+        const previewContainer = document.getElementById('content_image_preview');
         const contentTextarea = document.getElementById('content');
         
-        // Click to upload
-        dropzone.addEventListener('click', () => {
-            fileInput.click();
-        });
+        let uploadedImageUrl = '';
+        let uploadedImageFilename = '';
         
-        // Drag and drop functionality
-        dropzone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropzone.classList.add('dragover');
-        });
-        
-        dropzone.addEventListener('dragleave', () => {
-            dropzone.classList.remove('dragover');
-        });
-        
-        dropzone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropzone.classList.remove('dragover');
-            
-            if (e.dataTransfer.files.length) {
-                uploadContentImage(e.dataTransfer.files[0]);
-            }
-        });
-        
-        // File input change
-        fileInput.addEventListener('change', () => {
-            if (fileInput.files.length) {
-                uploadContentImage(fileInput.files[0]);
-                fileInput.value = ''; // Reset for future uploads
-            }
-        });
-        
-        // Upload function
-        function uploadContentImage(file) {
-            // Check if file is an image
-            if (!file.type.match('image.*')) {
-                alert('Please upload an image file');
-                return;
-            }
-            
-            // Create FormData
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            // Show loading indicator
-            const loadingItem = document.createElement('div');
-            loadingItem.className = 'image-item';
-            loadingItem.innerHTML = `
-                <div style="padding: 40px 0; text-align: center;">
-                    <p>Uploading...</p>
-                </div>
-            `;
-            preview.appendChild(loadingItem);
-            
-            // Upload the image
-            fetch('/admin/upload-content-image', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Remove loading indicator
-                preview.removeChild(loadingItem);
+        // Handle file selection
+        contentImageInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
                 
-                if (data.success) {
-                    // Create image preview item
-                    const imageItem = document.createElement('div');
-                    imageItem.className = 'image-item';
-                    imageItem.innerHTML = `
-                        <img src="${data.relative_url}" alt="${file.name}">
-                        <div class="image-name">${file.name}</div>
-                        <div class="image-actions">
-                            <button type="button" class="insert-btn">Insert</button>
-                            <button type="button" class="delete-btn">Delete</button>
-                        </div>
-                    `;
-                    
-                    // Store image data
-                    imageItem.dataset.url = data.url;
-                    imageItem.dataset.relativeUrl = data.relative_url;
-                    imageItem.dataset.filename = data.filename;
-                    
-                    // Add to preview
-                    preview.appendChild(imageItem);
-                    
-                    // Insert button click
-                    const insertBtn = imageItem.querySelector('.insert-btn');
-                    insertBtn.addEventListener('click', () => {
-                        insertImageAtCursor(data.url, data.filename);
-                    });
-                    
-                    // Delete button click
-                    const deleteBtn = imageItem.querySelector('.delete-btn');
-                    deleteBtn.addEventListener('click', () => {
-                        preview.removeChild(imageItem);
-                    });
-                } else {
-                    alert('Upload failed: ' + (data.error || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                // Remove loading indicator
-                preview.removeChild(loadingItem);
-                console.error('Error uploading image:', error);
-                alert('Upload failed. Please try again.');
-            });
-        }
+                // Create a FormData object
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                // Clear previous preview
+                previewContainer.innerHTML = '<p>Uploading...</p>';
+                insertButton.disabled = true;
+                
+                // Use the existing upload endpoint (same as featured image)
+                fetch('/admin/upload-image', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Store the uploaded image URL
+                        uploadedImageUrl = data.url;
+                        uploadedImageFilename = file.name;
+                        
+                        // Show preview
+                        previewContainer.innerHTML = `
+                            <img src="${uploadedImageUrl}" alt="${file.name}">
+                            <p>${file.name}</p>
+                        `;
+                        
+                        // Enable insert button
+                        insertButton.disabled = false;
+                    } else {
+                        previewContainer.innerHTML = '<p>Upload failed. Please try again.</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error uploading image:', error);
+                    previewContainer.innerHTML = '<p>Upload failed. Please try again.</p>';
+                });
+            }
+        });
         
-        // Insert image at cursor position
-        function insertImageAtCursor(imageUrl, filename) {
-            if (!contentTextarea) return;
+        // Handle insert button click
+        insertButton.addEventListener('click', function() {
+            if (!uploadedImageUrl || !contentTextarea) return;
             
             // Determine if we're in HTML or Markdown mode
             // For this implementation, we'll check if the content contains HTML tags
@@ -339,10 +220,10 @@
             let imageCode;
             if (isHtmlMode) {
                 // HTML format
-                imageCode = `<img src="${imageUrl}" alt="${filename}" class="content-image">`;
+                imageCode = `<img src="${uploadedImageUrl}" alt="${uploadedImageFilename}" class="content-image">`;
             } else {
                 // Markdown format
-                imageCode = `![${filename}](${imageUrl})`;
+                imageCode = `![${uploadedImageFilename}](${uploadedImageUrl})`;
             }
             
             // Get cursor position
@@ -361,7 +242,13 @@
             
             // Focus back on textarea
             contentTextarea.focus();
-        }
+            
+            // Reset the file input for next upload
+            contentImageInput.value = '';
+            
+            // Optionally, keep the preview but disable the insert button
+            insertButton.disabled = true;
+        });
     }
 </script>
 {% endblock %}
