@@ -1,9 +1,9 @@
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, jsonify, request, render_template, current_app
 from src.models.news_link import NewsLink
 from src.models.blog import Post, Category
 from src import db
-from flask_login import login_required
 from datetime import datetime
+from flask_login import login_required
 import requests
 import json
 import os
@@ -12,27 +12,87 @@ from slugify import slugify
 import random
 import string
 
-news_links_api = Blueprint('news_links_api', __name__)
+news_links_bp = Blueprint('news_links', __name__, url_prefix='/admin/news-links')
 
-@news_links_api.route('/api/links', methods=['GET'])
+@news_links_bp.route('/')
+@login_required
+def index():
+    """Render the admin interface for news links"""
+    return render_template('admin/news_links/index.html')
+
+@news_links_bp.route('/api/links', methods=['GET'])
 @login_required
 def get_links():
     """Get all news links ordered by date_fetched"""
     links = NewsLink.query.order_by(NewsLink.date_fetched.desc()).all()
     return jsonify([link.to_dict() for link in links])
 
-@news_links_api.route('/api/links', methods=['POST'])
+@news_links_bp.route('/api/links/<int:link_id>', methods=['PUT'])
+@login_required
+def update_link(link_id):
+    """Update a news link"""
+    try:
+        link = NewsLink.query.get_or_404(link_id)
+        data = request.json
+        
+        if 'url' in data:
+            link.url = data['url']
+        
+        if 'date_of_article' in data:
+            try:
+                if data['date_of_article']:
+                    link.date_of_article = datetime.fromisoformat(data['date_of_article']).date()
+                else:
+                    link.date_of_article = None
+            except ValueError as e:
+                return jsonify({'error': f'Invalid date format for date_of_article: {e}'}), 400
+        
+        if 'date_fetched' in data:
+            try:
+                if data['date_fetched']:
+                    link.date_fetched = datetime.fromisoformat(data['date_fetched']).date()
+                else:
+                    link.date_fetched = None
+            except ValueError as e:
+                return jsonify({'error': f'Invalid date format for date_fetched: {e}'}), 400
+        
+        if 'focus_of_article' in data:
+            link.focus_of_article = data['focus_of_article']
+        
+        if 'article_written' in data:
+            link.article_written = bool(data['article_written'])
+        
+        db.session.commit()
+        return jsonify(link.to_dict())
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error updating link: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@news_links_bp.route('/api/links/<int:link_id>', methods=['DELETE'])
+@login_required
+def delete_link(link_id):
+    """Delete a news link"""
+    try:
+        link = NewsLink.query.get_or_404(link_id)
+        db.session.delete(link)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting link: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@news_links_bp.route('/api/links', methods=['POST'])
 @login_required
 def create_link():
     """Create a new news link"""
     try:
         data = request.json
         
-        # Validate required fields
         if not data.get('url'):
             return jsonify({'error': 'URL is required'}), 400
         
-        # Handle date fields
         date_of_article = None
         if data.get('date_of_article'):
             try:
@@ -41,23 +101,22 @@ def create_link():
                 current_app.logger.error(f"Date conversion error: {e}")
                 return jsonify({'error': f'Invalid date format for date_of_article: {e}'}), 400
         
-        date_fetched = None
+        date_fetched = datetime.now().date()
         if data.get('date_fetched'):
             try:
                 date_fetched = datetime.fromisoformat(data['date_fetched']).date()
             except ValueError as e:
                 current_app.logger.error(f"Date conversion error: {e}")
                 return jsonify({'error': f'Invalid date format for date_fetched: {e}'}), 400
-        else:
-            date_fetched = datetime.now().date()
         
-        # Create new link
+        article_written = bool(data.get('article_written', False))
+        
         link = NewsLink(
             url=data['url'],
             date_of_article=date_of_article,
             date_fetched=date_fetched,
             focus_of_article=data.get('focus_of_article'),
-            article_written=data.get('article_written', False)
+            article_written=article_written
         )
         
         db.session.add(link)
@@ -69,72 +128,7 @@ def create_link():
         current_app.logger.error(f"Error creating link: {e}")
         return jsonify({'error': str(e)}), 500
 
-@news_links_api.route('/api/links/<int:link_id>', methods=['PUT'])
-@login_required
-def update_link(link_id):
-    """Update a news link"""
-    try:
-        link = NewsLink.query.get(link_id)
-        if not link:
-            return jsonify({'error': 'Link not found'}), 404
-        
-        data = request.json
-        
-        # Update fields if provided
-        if 'url' in data:
-            link.url = data['url']
-        
-        if 'date_of_article' in data:
-            if data['date_of_article']:
-                try:
-                    link.date_of_article = datetime.fromisoformat(data['date_of_article']).date()
-                except ValueError as e:
-                    return jsonify({'error': f'Invalid date format for date_of_article: {e}'}), 400
-            else:
-                link.date_of_article = None
-        
-        if 'date_fetched' in data:
-            if data['date_fetched']:
-                try:
-                    link.date_fetched = datetime.fromisoformat(data['date_fetched']).date()
-                except ValueError as e:
-                    return jsonify({'error': f'Invalid date format for date_fetched: {e}'}), 400
-            else:
-                link.date_fetched = None
-        
-        if 'focus_of_article' in data:
-            link.focus_of_article = data['focus_of_article']
-        
-        if 'article_written' in data:
-            link.article_written = data['article_written']
-        
-        db.session.commit()
-        
-        return jsonify(link.to_dict())
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error updating link: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@news_links_api.route('/api/links/<int:link_id>', methods=['DELETE'])
-@login_required
-def delete_link(link_id):
-    """Delete a news link"""
-    try:
-        link = NewsLink.query.get(link_id)
-        if not link:
-            return jsonify({'error': 'Link not found'}), 404
-        
-        db.session.delete(link)
-        db.session.commit()
-        
-        return jsonify({'success': True})
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error deleting link: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@news_links_api.route('/api/generate-article', methods=['POST'])
+@news_links_bp.route('/api/generate-article', methods=['POST'])
 @login_required
 def generate_article():
     """Generate an article using OpenAI API and create a post"""
