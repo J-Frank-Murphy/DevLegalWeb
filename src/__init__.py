@@ -14,6 +14,8 @@ login_manager.login_message_category = 'info'
 # Import models
 from src.models import db
 from src.models.user import User
+from src.routes.news_links import news_links_bp
+from src.models import user, blog, news_link
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -110,6 +112,7 @@ def register_blueprints(app):
     app.register_blueprint(blog_bp, url_prefix='/blog')
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(news_links_bp)
 
 def register_error_handlers(app):
     """Register error handlers"""
