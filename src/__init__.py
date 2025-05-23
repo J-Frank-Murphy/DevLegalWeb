@@ -15,6 +15,7 @@ login_manager.login_message_category = 'info'
 from src.models import db
 from src.models.user import User
 from src.routes.news_links import news_links_bp
+from src.routes.admin_documents import documents_bp  # Import the documents blueprint
 from src.models import user, blog, news_link
 
 @login_manager.user_loader
@@ -82,7 +83,7 @@ def configure_app(app, config=None):
         @app.route('/uploads/<path:filename>')
         def uploaded_file(filename):
             return send_from_directory('/opt/render/persistent-uploads', filename)
-            
+        
         # Handle legacy paths that might be in the database
         @app.route('/static/uploads/<path:filename>')
         def legacy_uploaded_file(filename):
@@ -96,7 +97,18 @@ def configure_app(app, config=None):
         app.config['UPLOAD_FOLDER'] = os.path.join(app.static_folder, 'uploads')
         app.config['UPLOADS_URL_PATH'] = '/static/uploads'  # URL path for static folder
     
+    # Define allowed file extensions
     app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+    
+    # Add allowed document extensions
+    app.config['ALLOWED_DOCUMENT_EXTENSIONS'] = {
+        'pdf', 'doc', 'docx', 'txt', 'rtf', 'odt',  # Document formats
+        'xls', 'xlsx', 'csv',                       # Spreadsheet formats
+        'ppt', 'pptx',                              # Presentation formats
+        'zip', 'rar', '7z',                         # Archive formats
+        'md', 'json', 'xml', 'html', 'css', 'js'    # Code/markup formats
+    }
+    
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     
     # Override with any provided config
@@ -113,6 +125,7 @@ def register_blueprints(app):
     app.register_blueprint(api_bp, url_prefix='/api')
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(news_links_bp)
+    app.register_blueprint(documents_bp)  # Register the documents blueprint
 
 def register_error_handlers(app):
     """Register error handlers"""
