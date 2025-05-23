@@ -49,6 +49,9 @@ def update_link(link_id):
     
     if 'article_written' in data:
         link.article_written = bool(data['article_written'])
+        
+    if 'focus_of_article' in data:
+        link.focus_of_article = data['focus_of_article']
     
     db.session.commit()
     return jsonify(link.to_dict())
@@ -86,15 +89,16 @@ def create_link():
             return jsonify({'error': 'Invalid date format for date_fetched'}), 400
     
     article_written = bool(data.get('article_written', False))
+    focus_of_article = data.get('focus_of_article', None)
     
     link = NewsLink(
         url=data['url'],
         date_of_article=date_of_article,
         date_fetched=date_fetched,
-        article_written=article_written
+        article_written=article_written,
+        focus_of_article=focus_of_article
     )
     
     db.session.add(link)
     db.session.commit()
-    
     return jsonify(link.to_dict()), 201
