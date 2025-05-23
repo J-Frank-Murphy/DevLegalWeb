@@ -12,6 +12,7 @@
         </div>
         <div class="card-body">
             <form id="newLinkForm" class="row g-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="col-md-6">
                     <label for="newUrl" class="form-label">URL</label>
                     <input type="text" class="form-control" id="newUrl" required>
@@ -110,7 +111,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Load all links when the page loads
         loadLinks();
-        
+
         // Set up the form submission for adding a new link
         document.getElementById('newLinkForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -125,7 +126,6 @@
             .then(links => {
                 const tableBody = document.getElementById('linksTableBody');
                 tableBody.innerHTML = '';
-                
                 links.forEach(link => {
                     const row = createLinkRow(link);
                     tableBody.appendChild(row);
@@ -141,12 +141,11 @@
     function createLinkRow(link) {
         const row = document.createElement('tr');
         row.dataset.id = link.id;
-        
+
         // URL cell with input and open button
         const urlCell = document.createElement('td');
         const urlContainer = document.createElement('div');
         urlContainer.className = 'url-container';
-        
         const urlInput = document.createElement('input');
         urlInput.type = 'text';
         urlInput.className = 'form-control url-input';
@@ -155,7 +154,6 @@
         urlInput.addEventListener('input', function() {
             handleFieldChange(row);
         });
-        
         const openUrlBtn = document.createElement('button');
         openUrlBtn.className = 'btn btn-sm btn-outline-secondary btn-open-url';
         openUrlBtn.innerHTML = '<i class="fas fa-external-link-alt"></i>';
@@ -163,11 +161,10 @@
         openUrlBtn.addEventListener('click', function() {
             window.open(urlInput.value, '_blank');
         });
-        
         urlContainer.appendChild(urlInput);
         urlContainer.appendChild(openUrlBtn);
         urlCell.appendChild(urlContainer);
-        
+
         // Date of Article cell
         const dateOfArticleCell = document.createElement('td');
         const dateOfArticleInput = document.createElement('input');
@@ -179,7 +176,7 @@
             handleFieldChange(row);
         });
         dateOfArticleCell.appendChild(dateOfArticleInput);
-        
+
         // Date Fetched cell
         const dateFetchedCell = document.createElement('td');
         const dateFetchedInput = document.createElement('input');
@@ -191,7 +188,7 @@
             handleFieldChange(row);
         });
         dateFetchedCell.appendChild(dateFetchedInput);
-        
+
         // Article Written cell with checkbox
         const articleWrittenCell = document.createElement('td');
         const articleWrittenCheckbox = document.createElement('input');
@@ -203,10 +200,9 @@
             handleFieldChange(row);
         });
         articleWrittenCell.appendChild(articleWrittenCheckbox);
-        
+
         // Actions cell with Save and Delete buttons
         const actionsCell = document.createElement('td');
-        
         const saveBtn = document.createElement('button');
         saveBtn.className = 'btn btn-sm btn-success save-btn me-2';
         saveBtn.textContent = 'Save';
@@ -214,24 +210,22 @@
         saveBtn.addEventListener('click', function() {
             saveLink(row);
         });
-        
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-sm btn-danger delete-btn';
         deleteBtn.textContent = 'Delete';
         deleteBtn.addEventListener('click', function() {
             showDeleteConfirmation(link.id);
         });
-        
         actionsCell.appendChild(saveBtn);
         actionsCell.appendChild(deleteBtn);
-        
+
         // Add all cells to the row
         row.appendChild(urlCell);
         row.appendChild(dateOfArticleCell);
         row.appendChild(dateFetchedCell);
         row.appendChild(articleWrittenCell);
         row.appendChild(actionsCell);
-        
+
         return row;
     }
 
@@ -242,24 +236,21 @@
         const dateOfArticleInput = row.querySelector('input[type="date"]:nth-of-type(1)');
         const dateFetchedInput = row.querySelector('input[type="date"]:nth-of-type(2)');
         const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
-        
+
         // Check if any field has changed
         const urlChanged = urlInput.value !== urlInput.dataset.original;
         const dateOfArticleChanged = dateOfArticleInput.value !== dateOfArticleInput.dataset.original;
         const dateFetchedChanged = dateFetchedInput.value !== dateFetchedInput.dataset.original;
         const articleWrittenChanged = articleWrittenCheckbox.checked.toString() !== articleWrittenCheckbox.dataset.original;
-        
-        const hasChanges = urlChanged || dateOfArticleChanged || dateFetchedChanged || articleWrittenChanged;
-        
+
         // Enable/disable save button based on changes
-        saveBtn.disabled = !hasChanges;
-        
-        // Add/remove modified class to highlight changes
-        if (hasChanges) {
-            row.classList.add('modified');
-        } else {
-            row.classList.remove('modified');
-        }
+        saveBtn.disabled = !(urlChanged || dateOfArticleChanged || dateFetchedChanged || articleWrittenChanged);
+
+        // Add/remove modified class for visual feedback
+        urlInput.parentElement.classList.toggle('modified', urlChanged);
+        dateOfArticleInput.classList.toggle('modified', dateOfArticleChanged);
+        dateFetchedInput.classList.toggle('modified', dateFetchedChanged);
+        articleWrittenCheckbox.classList.toggle('modified', articleWrittenChanged);
     }
 
     // Function to save link changes
@@ -270,7 +261,10 @@
         const dateFetchedInput = row.querySelector('input[type="date"]:nth-of-type(2)');
         const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
         const saveBtn = row.querySelector('.save-btn');
-        
+
+        // Get CSRF token
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+
         // Prepare data for update
         const data = {
             url: urlInput.value,
@@ -278,14 +272,11 @@
             date_fetched: dateFetchedInput.value || null,
             article_written: articleWrittenCheckbox.checked
         };
-        
-        // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-        
+
         // Disable save button during save
         saveBtn.disabled = true;
         saveBtn.textContent = 'Saving...';
-        
+
         // Send update request
         fetch(`/admin/news-links/api/links/${linkId}`, {
             method: 'PUT',
@@ -307,13 +298,19 @@
             dateOfArticleInput.dataset.original = updatedLink.date_of_article || '';
             dateFetchedInput.dataset.original = updatedLink.date_fetched || '';
             articleWrittenCheckbox.dataset.original = updatedLink.article_written;
-            
-            // Reset UI
+
+            // Reset modified classes
+            urlInput.parentElement.classList.remove('modified');
+            dateOfArticleInput.classList.remove('modified');
+            dateFetchedInput.classList.remove('modified');
+            articleWrittenCheckbox.classList.remove('modified');
+
+            // Reset save button
             saveBtn.textContent = 'Save';
-            row.classList.remove('modified');
-            
+            saveBtn.disabled = true;
+
             // Show success message
-            showToast('Changes saved successfully');
+            alert('Changes saved successfully');
         })
         .catch(error => {
             console.error('Error saving link:', error);
@@ -340,7 +337,7 @@
     // Function to delete a link
     function deleteLink(linkId) {
         // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
         
         fetch(`/admin/news-links/api/links/${linkId}`, {
             method: 'DELETE',
@@ -360,9 +357,7 @@
             if (row) {
                 row.remove();
             }
-            
-            // Show success message
-            showToast('Link deleted successfully');
+            alert('Link deleted successfully');
         })
         .catch(error => {
             console.error('Error deleting link:', error);
@@ -377,6 +372,9 @@
         const dateFetchedInput = document.getElementById('newDateFetched');
         const articleWrittenCheckbox = document.getElementById('newArticleWritten');
         
+        // Get CSRF token
+        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        
         // Prepare data for new link
         const data = {
             url: urlInput.value,
@@ -384,9 +382,6 @@
             date_fetched: dateFetchedInput.value || null,
             article_written: articleWrittenCheckbox.checked
         };
-        
-        // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         
         // Send create request
         fetch('/admin/news-links/api/links', {
@@ -405,56 +400,21 @@
         })
         .then(newLink => {
             // Add the new link to the table
-            const tableBody = document.getElementById('linksTableBody');
             const row = createLinkRow(newLink);
-            tableBody.insertBefore(row, tableBody.firstChild);
+            document.getElementById('linksTableBody').prepend(row);
             
             // Reset the form
-            document.getElementById('newLinkForm').reset();
+            urlInput.value = '';
+            dateOfArticleInput.value = '';
+            dateFetchedInput.value = '';
+            articleWrittenCheckbox.checked = false;
             
-            // Show success message
-            showToast('New link added successfully');
+            alert('New link added successfully');
         })
         .catch(error => {
-            console.error('Error adding link:', error);
+            console.error('Error adding new link:', error);
+            console.log('Request data:', data);
             alert('Failed to add new link. Please try again.');
-        });
-    }
-
-    // Helper function to show toast messages
-    function showToast(message) {
-        // Create toast container if it doesn't exist
-        let toastContainer = document.querySelector('.toast-container');
-        if (!toastContainer) {
-            toastContainer = document.createElement('div');
-            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-            document.body.appendChild(toastContainer);
-        }
-        
-        // Create toast element
-        const toastId = 'toast-' + Date.now();
-        const toastHtml = `
-            <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="toast-header">
-                    <strong class="me-auto">Notification</strong>
-                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-                <div class="toast-body">
-                    ${message}
-                </div>
-            </div>
-        `;
-        
-        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
-        
-        // Initialize and show the toast
-        const toastElement = document.getElementById(toastId);
-        const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
-        toast.show();
-        
-        // Remove toast after it's hidden
-        toastElement.addEventListener('hidden.bs.toast', function() {
-            toastElement.remove();
         });
     }
 </script>
