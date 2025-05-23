@@ -225,7 +225,8 @@ def generate_article():
                 updated_at=datetime.now(),
                 published=False,
                 comments_enabled=False,
-                category_id=drafts_category.id
+                category_id=drafts_category.id,
+                content_format='markdown'
             )
             
             # Add the post to the database
