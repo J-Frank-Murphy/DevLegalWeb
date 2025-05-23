@@ -1,7 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app
 from src.models.news_link import NewsLink
-from src.models.post import Post
-from src.models.category import Category
+from src.models.blog import Post, Category
 from src import db
 from flask_login import login_required
 from datetime import datetime
@@ -232,7 +231,6 @@ def generate_article():
                 updated_at=datetime.now(),
                 published=False,
                 comments_enabled=False,
-                content_format='markdown',
                 category_id=drafts_category.id
             )
             
