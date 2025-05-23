@@ -103,6 +103,9 @@
     .save-btn:disabled {
         cursor: not-allowed;
     }
+    .save-btn {
+        cursor: pointer;
+    }
     .modified {
         background-color: #fff3cd;
     }
@@ -205,7 +208,7 @@
         const focusOfArticleCell = document.createElement('td');
         const focusOfArticleInput = document.createElement('input');
         focusOfArticleInput.type = 'text';
-        focusOfArticleInput.className = 'form-control';
+        focusOfArticleInput.className = 'form-control focus-input';
         focusOfArticleInput.value = link.focus_of_article || '';
         focusOfArticleInput.dataset.original = link.focus_of_article || '';
         focusOfArticleInput.addEventListener('input', function() {
@@ -219,7 +222,7 @@
         articleWrittenCheckbox.type = 'checkbox';
         articleWrittenCheckbox.className = 'form-check-input';
         articleWrittenCheckbox.checked = link.article_written;
-        articleWrittenCheckbox.dataset.original = link.article_written;
+        articleWrittenCheckbox.dataset.original = link.article_written.toString();
         articleWrittenCheckbox.addEventListener('change', function() {
             handleFieldChange(row);
         });
@@ -260,9 +263,9 @@
     function handleFieldChange(row) {
         const saveBtn = row.querySelector('.save-btn');
         const urlInput = row.querySelector('.url-input');
-        const dateOfArticleInput = row.querySelector('input[type="date"]:nth-of-type(1)');
-        const dateFetchedInput = row.querySelector('input[type="date"]:nth-of-type(2)');
-        const focusOfArticleInput = row.querySelector('td:nth-child(4) input');
+        const dateOfArticleInput = row.querySelector('td:nth-child(2) input');
+        const dateFetchedInput = row.querySelector('td:nth-child(3) input');
+        const focusOfArticleInput = row.querySelector('.focus-input');
         const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
 
         // Check if any field has changed
@@ -273,7 +276,8 @@
         const articleWrittenChanged = articleWrittenCheckbox.checked.toString() !== articleWrittenCheckbox.dataset.original;
 
         // Enable/disable save button based on changes
-        saveBtn.disabled = !(urlChanged || dateOfArticleChanged || dateFetchedChanged || focusOfArticleChanged || articleWrittenChanged);
+        const hasChanges = urlChanged || dateOfArticleChanged || dateFetchedChanged || focusOfArticleChanged || articleWrittenChanged;
+        saveBtn.disabled = !hasChanges;
 
         // Highlight changed fields
         urlInput.parentElement.parentElement.classList.toggle('modified', urlChanged);
@@ -281,15 +285,24 @@
         dateFetchedInput.parentElement.classList.toggle('modified', dateFetchedChanged);
         focusOfArticleInput.parentElement.classList.toggle('modified', focusOfArticleChanged);
         articleWrittenCheckbox.parentElement.classList.toggle('modified', articleWrittenChanged);
+        
+        // Debug info
+        console.log('Field changes detected:');
+        console.log('URL changed:', urlChanged, urlInput.value, urlInput.dataset.original);
+        console.log('Date of Article changed:', dateOfArticleChanged, dateOfArticleInput.value, dateOfArticleInput.dataset.original);
+        console.log('Date Fetched changed:', dateFetchedChanged, dateFetchedInput.value, dateFetchedInput.dataset.original);
+        console.log('Focus of Article changed:', focusOfArticleChanged, focusOfArticleInput.value, focusOfArticleInput.dataset.original);
+        console.log('Article Written changed:', articleWrittenChanged, articleWrittenCheckbox.checked, articleWrittenCheckbox.dataset.original);
+        console.log('Save button disabled:', saveBtn.disabled);
     }
 
     // Function to save link changes
     function saveLink(row) {
         const linkId = row.dataset.id;
         const urlInput = row.querySelector('.url-input');
-        const dateOfArticleInput = row.querySelector('input[type="date"]:nth-of-type(1)');
-        const dateFetchedInput = row.querySelector('input[type="date"]:nth-of-type(2)');
-        const focusOfArticleInput = row.querySelector('td:nth-child(4) input');
+        const dateOfArticleInput = row.querySelector('td:nth-child(2) input');
+        const dateFetchedInput = row.querySelector('td:nth-child(3) input');
+        const focusOfArticleInput = row.querySelector('.focus-input');
         const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
         const saveBtn = row.querySelector('.save-btn');
 
@@ -330,7 +343,7 @@
             dateOfArticleInput.dataset.original = updatedLink.date_of_article || '';
             dateFetchedInput.dataset.original = updatedLink.date_fetched || '';
             focusOfArticleInput.dataset.original = updatedLink.focus_of_article || '';
-            articleWrittenCheckbox.dataset.original = updatedLink.article_written;
+            articleWrittenCheckbox.dataset.original = updatedLink.article_written.toString();
 
             // Reset modified styling
             urlInput.parentElement.parentElement.classList.remove('modified');
