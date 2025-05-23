@@ -46,6 +46,11 @@
                             <i class="fas fa-comments"></i> Comments
                         </a>
                     </li>
+                    <li>
+                        <a href="{{ url_for('news_links.index') }}" {% if request.endpoint == 'news_links.index' %}class="active"{% endif %}>
+                            <i class="fas fa-newspaper"></i> News Links
+                        </a>
+                    </li>
                 </ul>
             </nav>
             <div class="sidebar-footer">
