@@ -25,6 +25,10 @@
                     <label for="newDateFetched" class="form-label">Date Fetched</label>
                     <input type="date" class="form-control" id="newDateFetched">
                 </div>
+                <div class="col-md-6">
+                    <label for="newFocusOfArticle" class="form-label">Focus of Article</label>
+                    <input type="text" class="form-control" id="newFocusOfArticle">
+                </div>
                 <div class="col-md-3">
                     <div class="form-check mt-4">
                         <input class="form-check-input" type="checkbox" id="newArticleWritten">
@@ -52,6 +56,7 @@
                             <th>URL</th>
                             <th>Date of Article</th>
                             <th>Date Fetched</th>
+                            <th>Focus of Article</th>
                             <th>Article Written</th>
                             <th>Actions</th>
                         </tr>
@@ -159,6 +164,7 @@
         urlInput.addEventListener('input', function() {
             handleFieldChange(row);
         });
+
         const openUrlBtn = document.createElement('button');
         openUrlBtn.className = 'btn btn-sm btn-outline-secondary btn-open-url';
         openUrlBtn.innerHTML = '<i class="fas fa-external-link-alt"></i>';
@@ -166,6 +172,7 @@
         openUrlBtn.addEventListener('click', function() {
             window.open(urlInput.value, '_blank');
         });
+
         urlContainer.appendChild(urlInput);
         urlContainer.appendChild(openUrlBtn);
         urlCell.appendChild(urlContainer);
@@ -193,6 +200,18 @@
             handleFieldChange(row);
         });
         dateFetchedCell.appendChild(dateFetchedInput);
+        
+        // Focus of Article cell
+        const focusOfArticleCell = document.createElement('td');
+        const focusOfArticleInput = document.createElement('input');
+        focusOfArticleInput.type = 'text';
+        focusOfArticleInput.className = 'form-control';
+        focusOfArticleInput.value = link.focus_of_article || '';
+        focusOfArticleInput.dataset.original = link.focus_of_article || '';
+        focusOfArticleInput.addEventListener('input', function() {
+            handleFieldChange(row);
+        });
+        focusOfArticleCell.appendChild(focusOfArticleInput);
 
         // Article Written cell with checkbox
         const articleWrittenCell = document.createElement('td');
@@ -215,12 +234,14 @@
         saveBtn.addEventListener('click', function() {
             saveLink(row);
         });
+
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-sm btn-danger delete-btn';
         deleteBtn.textContent = 'Delete';
         deleteBtn.addEventListener('click', function() {
             showDeleteConfirmation(link.id);
         });
+
         actionsCell.appendChild(saveBtn);
         actionsCell.appendChild(deleteBtn);
 
@@ -228,6 +249,7 @@
         row.appendChild(urlCell);
         row.appendChild(dateOfArticleCell);
         row.appendChild(dateFetchedCell);
+        row.appendChild(focusOfArticleCell);
         row.appendChild(articleWrittenCell);
         row.appendChild(actionsCell);
 
@@ -240,22 +262,25 @@
         const urlInput = row.querySelector('.url-input');
         const dateOfArticleInput = row.querySelector('input[type="date"]:nth-of-type(1)');
         const dateFetchedInput = row.querySelector('input[type="date"]:nth-of-type(2)');
+        const focusOfArticleInput = row.querySelector('td:nth-child(4) input');
         const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
 
         // Check if any field has changed
         const urlChanged = urlInput.value !== urlInput.dataset.original;
         const dateOfArticleChanged = dateOfArticleInput.value !== dateOfArticleInput.dataset.original;
         const dateFetchedChanged = dateFetchedInput.value !== dateFetchedInput.dataset.original;
+        const focusOfArticleChanged = focusOfArticleInput.value !== focusOfArticleInput.dataset.original;
         const articleWrittenChanged = articleWrittenCheckbox.checked.toString() !== articleWrittenCheckbox.dataset.original;
 
         // Enable/disable save button based on changes
-        saveBtn.disabled = !(urlChanged || dateOfArticleChanged || dateFetchedChanged || articleWrittenChanged);
+        saveBtn.disabled = !(urlChanged || dateOfArticleChanged || dateFetchedChanged || focusOfArticleChanged || articleWrittenChanged);
 
-        // Add/remove modified class for visual feedback
-        urlInput.parentElement.classList.toggle('modified', urlChanged);
-        dateOfArticleInput.classList.toggle('modified', dateOfArticleChanged);
-        dateFetchedInput.classList.toggle('modified', dateFetchedChanged);
-        articleWrittenCheckbox.classList.toggle('modified', articleWrittenChanged);
+        // Highlight changed fields
+        urlInput.parentElement.parentElement.classList.toggle('modified', urlChanged);
+        dateOfArticleInput.parentElement.classList.toggle('modified', dateOfArticleChanged);
+        dateFetchedInput.parentElement.classList.toggle('modified', dateFetchedChanged);
+        focusOfArticleInput.parentElement.classList.toggle('modified', focusOfArticleChanged);
+        articleWrittenCheckbox.parentElement.classList.toggle('modified', articleWrittenChanged);
     }
 
     // Function to save link changes
@@ -264,6 +289,7 @@
         const urlInput = row.querySelector('.url-input');
         const dateOfArticleInput = row.querySelector('input[type="date"]:nth-of-type(1)');
         const dateFetchedInput = row.querySelector('input[type="date"]:nth-of-type(2)');
+        const focusOfArticleInput = row.querySelector('td:nth-child(4) input');
         const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
         const saveBtn = row.querySelector('.save-btn');
 
@@ -275,6 +301,7 @@
             url: urlInput.value,
             date_of_article: dateOfArticleInput.value || null,
             date_fetched: dateFetchedInput.value || null,
+            focus_of_article: focusOfArticleInput.value || null,
             article_written: articleWrittenCheckbox.checked
         };
 
@@ -293,7 +320,7 @@
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Failed to save changes: ' + response.status);
+                throw new Error('Network response was not ok: ' + response.status);
             }
             return response.json();
         })
@@ -302,24 +329,23 @@
             urlInput.dataset.original = updatedLink.url;
             dateOfArticleInput.dataset.original = updatedLink.date_of_article || '';
             dateFetchedInput.dataset.original = updatedLink.date_fetched || '';
+            focusOfArticleInput.dataset.original = updatedLink.focus_of_article || '';
             articleWrittenCheckbox.dataset.original = updatedLink.article_written;
 
-            // Reset modified classes
-            urlInput.parentElement.classList.remove('modified');
-            dateOfArticleInput.classList.remove('modified');
-            dateFetchedInput.classList.remove('modified');
-            articleWrittenCheckbox.classList.remove('modified');
+            // Reset modified styling
+            urlInput.parentElement.parentElement.classList.remove('modified');
+            dateOfArticleInput.parentElement.classList.remove('modified');
+            dateFetchedInput.parentElement.classList.remove('modified');
+            focusOfArticleInput.parentElement.classList.remove('modified');
+            articleWrittenCheckbox.parentElement.classList.remove('modified');
 
             // Reset save button
             saveBtn.textContent = 'Save';
             saveBtn.disabled = true;
-
-            // Show success message
-            alert('Changes saved successfully');
         })
         .catch(error => {
-            console.error('Error saving link:', error);
-            alert('Failed to save changes. Please try again. Error: ' + error.message);
+            console.error('Error updating link:', error);
+            alert('Failed to update link. Please try again. Error: ' + error.message);
             saveBtn.textContent = 'Save';
             saveBtn.disabled = false;
         });
@@ -330,7 +356,7 @@
         const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
         const confirmBtn = document.getElementById('confirmDeleteBtn');
         
-        // Set up the confirm button to delete the link
+        // Set up the confirm button to delete the link when clicked
         confirmBtn.onclick = function() {
             deleteLink(linkId);
             modal.hide();
@@ -352,17 +378,18 @@
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Failed to delete link: ' + response.status);
+                throw new Error('Network response was not ok: ' + response.status);
             }
             return response.json();
         })
         .then(data => {
-            // Remove the row from the table
-            const row = document.querySelector(`tr[data-id="${linkId}"]`);
-            if (row) {
-                row.remove();
+            if (data.success) {
+                // Remove the row from the table
+                const row = document.querySelector(`tr[data-id="${linkId}"]`);
+                if (row) {
+                    row.remove();
+                }
             }
-            alert('Link deleted successfully');
         })
         .catch(error => {
             console.error('Error deleting link:', error);
@@ -375,23 +402,21 @@
         const urlInput = document.getElementById('newUrl');
         const dateOfArticleInput = document.getElementById('newDateOfArticle');
         const dateFetchedInput = document.getElementById('newDateFetched');
+        const focusOfArticleInput = document.getElementById('newFocusOfArticle');
         const articleWrittenCheckbox = document.getElementById('newArticleWritten');
         
         // Get CSRF token
         const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-        
+
         // Prepare data for new link
         const data = {
             url: urlInput.value,
             date_of_article: dateOfArticleInput.value || null,
             date_fetched: dateFetchedInput.value || null,
+            focus_of_article: focusOfArticleInput.value || null,
             article_written: articleWrittenCheckbox.checked
         };
-        
-        console.log('Sending data to create new link:', data);
-        console.log('CSRF Token:', csrfToken);
-        console.log('Endpoint URL:', '/admin/news-links/api/links');
-        
+
         // Send create request
         fetch('/admin/news-links/api/links', {
             method: 'POST',
@@ -399,39 +424,25 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
-            body: JSON.stringify(data),
-            credentials: 'same-origin'
+            body: JSON.stringify(data)
         })
         .then(response => {
-            console.log('Response status:', response.status);
-            console.log('Response headers:', [...response.headers.entries()]);
-            
             if (!response.ok) {
-                return response.text().then(text => {
-                    console.error('Error response body:', text);
-                    throw new Error('Failed to add new link: ' + response.status + ' ' + text);
-                });
+                throw new Error('Network response was not ok: ' + response.status);
             }
             return response.json();
         })
         .then(newLink => {
-            console.log('Successfully created new link:', newLink);
-            
             // Add the new link to the table
+            const tableBody = document.getElementById('linksTableBody');
             const row = createLinkRow(newLink);
-            document.getElementById('linksTableBody').prepend(row);
+            tableBody.insertBefore(row, tableBody.firstChild);
             
             // Reset the form
-            urlInput.value = '';
-            dateOfArticleInput.value = '';
-            dateFetchedInput.value = '';
-            articleWrittenCheckbox.checked = false;
-            
-            alert('New link added successfully');
+            document.getElementById('newLinkForm').reset();
         })
         .catch(error => {
             console.error('Error adding new link:', error);
-            console.log('Request data:', data);
             alert('Failed to add new link. Please try again. Error: ' + error.message);
         });
     }
