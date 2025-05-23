@@ -161,7 +161,7 @@ def generate_article():
         }
         
         # Construct the user prompt
-        user_prompt = "Write a short blog post commenting on this news story: {data['url']}. The focus of the article should be {data['focus_of_article']}. Compose the article in markdown format, and give it a title and a one sentence summary. If you link to the news story in the article, then do so in a way such that the link opens in a new tab. Return your response as a JSON object with the structure below. Do not return any other text or data other than the JSON object.\n\n{{\n\"title\": string,\n\"excerpt\": string,\n\"content\": string\n}}"
+        user_prompt = f"Write a short blog post commenting on this news story: {data['url']}. The focus of the article should be {data['focus_of_article']}. Compose the article in markdown format, and give it a title and a one sentence summary. If you link to the news story in the article, then do so in a way such that the link opens in a new tab. Return your response as a JSON object with the structure below. Do not return any other text or data other than the JSON object.\n\n{{\n\"title\": string,\n\"excerpt\": string,\n\"content\": string\n}}"
         
         # Construct the system prompt
         system_prompt = "You are a helpful assistant that writes commentary on issues relating to technology, the law, intellectual property, and open source licensing and compliance"
