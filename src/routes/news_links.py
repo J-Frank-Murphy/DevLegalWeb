@@ -148,6 +148,11 @@ def generate_article():
         if not link:
             return jsonify({'error': 'Link not found'}), 404
         
+        # Save the focus_of_article field immediately, even if article generation fails
+        # This ensures the focus is saved as if the user had clicked the Save button
+        link.focus_of_article = data['focus_of_article']
+        db.session.commit()
+        
         # Get OpenAI API key from environment variable
         api_key = os.environ.get('OPENAI_API_KEY')
         if not api_key:
