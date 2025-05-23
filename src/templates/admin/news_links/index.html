@@ -122,7 +122,12 @@
     // Function to load all links
     function loadLinks() {
         fetch('/admin/news-links/api/links')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok: ' + response.status);
+                }
+                return response.json();
+            })
             .then(links => {
                 const tableBody = document.getElementById('linksTableBody');
                 tableBody.innerHTML = '';
@@ -133,7 +138,7 @@
             })
             .catch(error => {
                 console.error('Error loading links:', error);
-                alert('Failed to load links. Please try again.');
+                alert('Failed to load links. Please try again. Error: ' + error.message);
             });
     }
 
@@ -288,7 +293,7 @@
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Failed to save changes');
+                throw new Error('Failed to save changes: ' + response.status);
             }
             return response.json();
         })
@@ -314,7 +319,7 @@
         })
         .catch(error => {
             console.error('Error saving link:', error);
-            alert('Failed to save changes. Please try again.');
+            alert('Failed to save changes. Please try again. Error: ' + error.message);
             saveBtn.textContent = 'Save';
             saveBtn.disabled = false;
         });
@@ -347,7 +352,7 @@
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Failed to delete link');
+                throw new Error('Failed to delete link: ' + response.status);
             }
             return response.json();
         })
@@ -361,7 +366,7 @@
         })
         .catch(error => {
             console.error('Error deleting link:', error);
-            alert('Failed to delete link. Please try again.');
+            alert('Failed to delete link. Please try again. Error: ' + error.message);
         });
     }
 
@@ -383,6 +388,10 @@
             article_written: articleWrittenCheckbox.checked
         };
         
+        console.log('Sending data to create new link:', data);
+        console.log('CSRF Token:', csrfToken);
+        console.log('Endpoint URL:', '/admin/news-links/api/links');
+        
         // Send create request
         fetch('/admin/news-links/api/links', {
             method: 'POST',
@@ -390,15 +399,24 @@
                 'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
+            credentials: 'same-origin'
         })
         .then(response => {
+            console.log('Response status:', response.status);
+            console.log('Response headers:', [...response.headers.entries()]);
+            
             if (!response.ok) {
-                throw new Error('Failed to add new link');
+                return response.text().then(text => {
+                    console.error('Error response body:', text);
+                    throw new Error('Failed to add new link: ' + response.status + ' ' + text);
+                });
             }
             return response.json();
         })
         .then(newLink => {
+            console.log('Successfully created new link:', newLink);
+            
             // Add the new link to the table
             const row = createLinkRow(newLink);
             document.getElementById('linksTableBody').prepend(row);
@@ -414,7 +432,7 @@
         .catch(error => {
             console.error('Error adding new link:', error);
             console.log('Request data:', data);
-            alert('Failed to add new link. Please try again.');
+            alert('Failed to add new link. Please try again. Error: ' + error.message);
         });
     }
 </script>
