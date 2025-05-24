@@ -316,10 +316,10 @@ Only return the JSON object, nothing else."""
         current_app.logger.info(f"Sending request to Perplexity API with prompt: {prompt}")
         
         # Make the request to Perplexity API
-        response = requests.post(
+        response = requests.request("POST",
             "https://api.perplexity.ai/chat/completions",
-            headers=headers,
-            json=payload
+            json=payload,
+            headers=headers
         )
         
         # Check if the request was successful
