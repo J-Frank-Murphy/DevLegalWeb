@@ -425,7 +425,12 @@ def parse_date_string(date_str):
 @news_links_bp.route('/api/fetch-perplexity', methods=['POST'])
 @login_required
 def fetch_perplexity_links():
-    """Fetch news links from Perplexity AI and add them to the database"""
+    """
+    Fetch news links from Perplexity AI and return the raw response for debugging.
+    
+    This version returns the raw content from Perplexity AI without saving anything
+    to the database, allowing for debugging of the response format.
+    """
     # Check if Perplexity API key is configured
     api_key = os.environ.get('PERPLEXITY_API_KEY')
     if not api_key:
@@ -481,124 +486,22 @@ def fetch_perplexity_links():
         if 'choices' not in perplexity_response or not perplexity_response['choices']:
             raise ValueError("Invalid response format from Perplexity API")
         
-        content = perplexity_response['choices'][0]['message']['content']
-        current_app.logger.info(f"Received content from Perplexity API: {content[:500]}...")
+        # Get the raw content
+        raw_content = perplexity_response['choices'][0]['message']['content']
         
-        # First try to parse as JSON (in case Perplexity did return JSON)
-        try:
-            # Try to find JSON array in the content
-            start_idx = content.find('[')
-            end_idx = content.rfind(']') + 1
-            
-            if start_idx != -1 and end_idx > 0:
-                # Extract the JSON array
-                json_str = content[start_idx:end_idx]
-                links_data = json.loads(json_str)
-                
-                # Ensure links_data is a list
-                if not isinstance(links_data, list):
-                    if isinstance(links_data, dict):
-                        # If it's a single object, wrap it in a list
-                        links_data = [links_data]
-                    else:
-                        # If it's not a list or dict, fall back to text parsing
-                        raise ValueError("Response is not a valid JSON array or object")
-                
-                # Process JSON data
-                processed_links = []
-                today = datetime.now().date()
-                
-                for link_data in links_data:
-                    # Validate required fields
-                    if not isinstance(link_data, dict) or 'url' not in link_data:
-                        current_app.logger.warning(f"Skipping invalid link data: {link_data}")
-                        continue
-                        
-                    url = link_data.get('url', '').strip()
-                    date_str = link_data.get('date_of_article', '').strip()
-                    
-                    # Skip if URL is empty
-                    if not url:
-                        current_app.logger.warning("Skipping link with empty URL")
-                        continue
-                    
-                    # Parse date if available
-                    date_of_article = None
-                    if date_str:
-                        date_of_article = parse_date_string(date_str)
-                    
-                    # Create and save the news link
-                    link = NewsLink(
-                        url=url,
-                        date_of_article=date_of_article,
-                        date_fetched=today,
-                        article_written=False
-                    )
-                    
-                    db.session.add(link)
-                    processed_links.append(link.to_dict())
-                
-                # Commit all links to the database
-                db.session.commit()
-                
-                # Return success response with processed links
-                return jsonify({
-                    'success': True,
-                    'links': processed_links,
-                    'count': len(processed_links),
-                    'source': 'json'
-                })
-                
-        except (json.JSONDecodeError, ValueError) as e:
-            # JSON parsing failed, fall back to text parsing
-            current_app.logger.info(f"JSON parsing failed, falling back to text extraction: {e}")
+        # Log the raw content
+        current_app.logger.info(f"Raw content from Perplexity API: {raw_content}")
         
-        # Extract URLs and dates from unstructured text
-        extracted_data = extract_urls_and_dates(content)
-        
-        if not extracted_data:
-            current_app.logger.warning("No URLs found in Perplexity response")
-            return jsonify({'error': 'No valid URLs found in Perplexity response'}), 500
-        
-        # Process extracted data
-        processed_links = []
-        today = datetime.now().date()
-        
-        for item in extracted_data:
-            url = item['url']
-            date_of_article = item['date_of_article']
-            
-            # Create and save the news link
-            link = NewsLink(
-                url=url,
-                date_of_article=date_of_article,
-                date_fetched=today,
-                article_written=False
-            )
-            
-            db.session.add(link)
-            processed_links.append({
-                'url': url,
-                'date_of_article': date_of_article.isoformat() if date_of_article else None,
-                'date_fetched': today.isoformat(),
-                'article_written': False
-            })
-        
-        # Commit all links to the database
-        db.session.commit()
-        
-        # Return success response with processed links
+        # Return the raw content for debugging
         return jsonify({
-            'success': True,
-            'links': processed_links,
-            'count': len(processed_links),
-            'source': 'text'
+            'debug': True,
+            'raw_content': raw_content,
+            'message': 'This is the raw content from Perplexity AI for debugging purposes. No links have been saved to the database.'
         })
         
     except requests.exceptions.RequestException as e:
         current_app.logger.error(f"Request to Perplexity API failed: {str(e)}")
         return jsonify({'error': f'Failed to connect to Perplexity API: {str(e)}'}), 500
     except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error fetching links from Perplexity: {str(e)}")
-        return jsonify({'error': f'Error fetching links from Perplexity: {str(e)}'}), 500
+        current_app.logger.error(f"Error fetching from Perplexity: {str(e)}")
+        return jsonify({'error': f'Error fetching from Perplexity: {str(e)}'}), 500
