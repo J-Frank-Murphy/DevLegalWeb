@@ -290,11 +290,7 @@ def fetch_perplexity_links():
 
 Only return the JSON object, nothing else."""
         
-        # Prepare the request to Perplexity API
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
+
         
         payload = {
             "model": "sonar-deep-research",
@@ -310,6 +306,12 @@ Only return the JSON object, nothing else."""
                     "content": prompt
                 }
             ]    
+        }
+
+        # Prepare the request to Perplexity API
+        headers = {
+            "Authorization": "Bearer {api_key}",
+            "Content-Type": "application/json"
         }
         
         # Log the request (without API key)
