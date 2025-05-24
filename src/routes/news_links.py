@@ -293,7 +293,7 @@ Only return the JSON object, nothing else."""
         }
         
         payload = {
-            "model": "sonar-medium-online",
+            "model": "sonar-deep-research",
             "prompt": prompt,
             "temperature": 0.0,
             "max_tokens": 4000
