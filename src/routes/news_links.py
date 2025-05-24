@@ -294,6 +294,8 @@ Only return the JSON object, nothing else."""
         
         payload = {
             "model": "sonar-deep-research",
+            "temperature": 0.0,
+            "max_tokens": 4000,
             "messages": [
                 {
                     "role": "system",
@@ -302,9 +304,7 @@ Only return the JSON object, nothing else."""
                 {
                     "role": "user",
                     "content": prompt
-                },
-            "temperature": 0.0,
-            "max_tokens": 4000
+                }
             ]    
         }
         
