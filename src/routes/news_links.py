@@ -263,6 +263,211 @@ def generate_article():
         current_app.logger.error(f"Error generating article: {e}")
         return jsonify({'error': str(e)}), 500
 
+@news_links_bp.route('/api/fetch-perplexity', methods=['POST'])
+@login_required
+def fetch_perplexity_links():
+    """
+    Fetch news links from Perplexity AI, return the raw response for debugging,
+    and extract URLs and dates from the response.
+    """
+    # Check if Perplexity API key is configured
+    api_key = os.environ.get('PERPLEXITY_API_KEY')
+    if not api_key:
+        current_app.logger.error("Perplexity API key not found in environment variables")
+        return jsonify({'error': 'Perplexity API key not configured. Please set the PERPLEXITY_API_KEY environment variable.'}), 500
+    
+    try:
+        # Get yesterday's date for the prompt
+        yesterday = (datetime.now() - timedelta(days=1)).strftime('%B %d, %Y')
+        
+        # Construct the prompt for Perplexity AI
+        prompt = f"""Give me ten links to articles from {yesterday} (or thereabouts) about news stories, announcements by tech companies, court cases, regulatory actions, or other occurrences that relate to the intersection of law, technology, and business. Focus on articles about intellectual property issues, open source licensing and compliance, and data privacy. For each article, give me the URL and the date of the article in MM-DD-YYYY format. Don't give me any text or commentary other than the URLs and the dates. Return the data as an array of JSON objects in the following format:
+
+{{
+"url": string
+"date_of_article": string
+}}
+
+Only return the JSON object, nothing else."""
+        
+        # Prepare the request to Perplexity API
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": "sonar-deep-research",
+            "temperature": 0.0,
+            "max_tokens": 4000,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant that researches news stories about law, technology, and business."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]    
+        }
+        
+        # Log the request (without API key)
+        current_app.logger.info(f"Sending request to Perplexity API with prompt: {prompt}")
+        
+        # Make the request to Perplexity API
+        response = requests.post(
+            "https://api.perplexity.ai/chat/completions",
+            headers=headers,
+            json=payload
+        )
+        
+        # Check if the request was successful
+        response.raise_for_status()
+        
+        # Parse the response
+        perplexity_response = response.json()
+        
+        # Extract the content from the response
+        if 'choices' not in perplexity_response or not perplexity_response['choices']:
+            raise ValueError("Invalid response format from Perplexity API")
+        
+        # Get the raw content
+        raw_content = perplexity_response['choices'][0]['message']['content']
+        
+        # Log the raw content
+        current_app.logger.info(f"Raw content from Perplexity API: {raw_content}")
+        
+        # Try to parse the content as JSON
+        try:
+            # Attempt to parse as JSON
+            links_data = json.loads(raw_content)
+            
+            # Validate that it's a list or object
+            if isinstance(links_data, list):
+                # It's already a list, use it as is
+                pass
+            elif isinstance(links_data, dict):
+                # If it's a single object, wrap it in a list
+                links_data = [links_data]
+            else:
+                # If it's not a list or dict, fall back to text parsing
+                raise ValueError("Response is not a valid JSON array or object")
+            
+            # Process JSON data
+            processed_links = []
+            today = datetime.now().date()
+            
+            for link_data in links_data:
+                # Validate required fields
+                if not isinstance(link_data, dict) or 'url' not in link_data:
+                    current_app.logger.warning(f"Skipping invalid link data: {link_data}")
+                    continue
+                    
+                url = link_data.get('url', '').strip()
+                date_str = link_data.get('date_of_article', '').strip()
+                
+                # Skip if URL is empty
+                if not url:
+                    current_app.logger.warning("Skipping link with empty URL")
+                    continue
+                
+                # Parse date if available
+                date_of_article = None
+                if date_str:
+                    date_of_article = parse_date_string(date_str)
+                
+                # Create and save the news link
+                link = NewsLink(
+                    url=url,
+                    date_of_article=date_of_article,
+                    date_fetched=today,
+                    article_written=False
+                )
+                
+                db.session.add(link)
+                processed_links.append(link.to_dict())
+            
+            # Commit all links to the database
+            db.session.commit()
+            
+            # Return success response with processed links and raw content for debugging
+            return jsonify({
+                'success': True,
+                'links': processed_links,
+                'count': len(processed_links),
+                'source': 'json',
+                'debug': {
+                    'request_payload': payload,
+                    'raw_content': raw_content
+                }
+            })
+            
+        except (json.JSONDecodeError, ValueError) as e:
+            # JSON parsing failed, fall back to text parsing
+            current_app.logger.info(f"JSON parsing failed, falling back to text extraction: {e}")
+        
+        # Extract URLs and dates from unstructured text
+        extracted_data = extract_urls_and_dates(raw_content)
+        
+        if not extracted_data:
+            current_app.logger.warning("No URLs found in Perplexity response")
+            return jsonify({
+                'success': False,
+                'error': 'No valid URLs found in Perplexity response',
+                'debug': {
+                    'request_payload': payload,
+                    'raw_content': raw_content
+                }
+            }), 500
+        
+        # Process extracted data
+        processed_links = []
+        today = datetime.now().date()
+        
+        for item in extracted_data:
+            url = item['url']
+            date_of_article = item['date_of_article']
+            
+            # Create and save the news link
+            link = NewsLink(
+                url=url,
+                date_of_article=date_of_article,
+                date_fetched=today,
+                article_written=False
+            )
+            
+            db.session.add(link)
+            processed_links.append({
+                'url': url,
+                'date_of_article': date_of_article.isoformat() if date_of_article else None,
+                'date_fetched': today.isoformat(),
+                'article_written': False
+            })
+        
+        # Commit all links to the database
+        db.session.commit()
+        
+        # Return success response with processed links and raw content for debugging
+        return jsonify({
+            'success': True,
+            'links': processed_links,
+            'count': len(processed_links),
+            'source': 'text',
+            'debug': {
+                'request_payload': payload,
+                'raw_content': raw_content
+            }
+        })
+        
+    except requests.exceptions.RequestException as e:
+        current_app.logger.error(f"Request to Perplexity API failed: {str(e)}")
+        return jsonify({'error': f'Failed to connect to Perplexity API: {str(e)}'}), 500
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error fetching links from Perplexity: {str(e)}")
+        return jsonify({'error': f'Error fetching links from Perplexity: {str(e)}'}), 500
+
 def extract_urls_and_dates(text):
     """
     Extract URLs and associated dates from unstructured text.
@@ -421,67 +626,3 @@ def parse_date_string(date_str):
     # If all formats fail, log warning and return None
     current_app.logger.warning(f"Could not parse date: {date_str}")
     return None
-
-@news_links_bp.route('/api/fetch-perplexity', methods=['POST'])
-@login_required
-def fetch_perplexity_links():
-    """
-    Show the JSON object that would be sent to Perplexity AI for debugging.
-    
-    This version returns the payload that would be sent to Perplexity AI
-    without actually making the API call or saving anything to the database.
-    It also includes an empty links array to prevent frontend JS errors.
-    """
-    # Check if Perplexity API key is configured
-    api_key = os.environ.get('PERPLEXITY_API_KEY')
-    if not api_key:
-        current_app.logger.error("Perplexity API key not found in environment variables")
-        return jsonify({'error': 'Perplexity API key not configured. Please set the PERPLEXITY_API_KEY environment variable.'}), 500
-    
-    try:
-        # Get yesterday's date for the prompt
-        yesterday = (datetime.now() - timedelta(days=1)).strftime('%B %d, %Y')
-        
-        # Construct the prompt for Perplexity AI
-        prompt = f"""Give me ten links to articles from {yesterday} (or thereabouts) about news stories, announcements by tech companies, court cases, regulatory actions, or other occurrences that relate to the intersection of law, technology, and business. Focus on articles about intellectual property issues, open source licensing and compliance, and data privacy. For each article, give me the URL and the date of the article in MM-DD-YYYY format. Don't give me any text or commentary other than the URLs and the dates. Return the data as an array of JSON objects in the following format:
-
-{{
-"url": string
-"date_of_article": string
-}}
-
-Only return the JSON object, nothing else."""
-        
-        # Prepare the request payload that would be sent to Perplexity API
-        payload = {
-            "model": "sonar-deep-research",
-            "temperature": 0.0,
-            "max_tokens": 4000,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": "You are a helpful assistant that researches news stories about law, technology, and business."
-                },
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ]    
-        }
-        
-        # Log the payload (without API key)
-        current_app.logger.info(f"Payload that would be sent to Perplexity API: {payload}")
-        
-        # Return the payload for debugging, including an empty links array to prevent frontend JS errors
-        return jsonify({
-            'success': True,
-            'debug': True,
-            'request_payload': payload,
-            'links': [],  # Empty array to prevent frontend JS errors
-            'count': 0,
-            'message': 'This is the JSON object that would be sent to Perplexity AI for debugging purposes. No API call has been made and no links have been saved to the database.'
-        })
-        
-    except Exception as e:
-        current_app.logger.error(f"Error preparing Perplexity request: {str(e)}")
-        return jsonify({'error': f'Error preparing Perplexity request: {str(e)}'}), 500
