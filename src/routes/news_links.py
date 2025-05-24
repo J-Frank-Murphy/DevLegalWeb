@@ -294,9 +294,18 @@ Only return the JSON object, nothing else."""
         
         payload = {
             "model": "sonar-deep-research",
-            "prompt": prompt,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a helpful assistant that researches news stories about law, technology, and business."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
             "temperature": 0.0,
             "max_tokens": 4000
+            ]    
         }
         
         # Log the request (without API key)
