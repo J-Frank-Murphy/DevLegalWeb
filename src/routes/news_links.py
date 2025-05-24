@@ -302,7 +302,7 @@ Only return the JSON object, nothing else."""
                 {
                     "role": "user",
                     "content": prompt
-                }
+                },
             "temperature": 0.0,
             "max_tokens": 4000
             ]    
