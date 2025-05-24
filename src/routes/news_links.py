@@ -426,10 +426,10 @@ def parse_date_string(date_str):
 @login_required
 def fetch_perplexity_links():
     """
-    Fetch news links from Perplexity AI and return the raw response for debugging.
+    Show the JSON object that would be sent to Perplexity AI for debugging.
     
-    This version returns the raw content from Perplexity AI without saving anything
-    to the database, allowing for debugging of the response format.
+    This version returns the payload that would be sent to Perplexity AI
+    without actually making the API call or saving anything to the database.
     """
     # Check if Perplexity API key is configured
     api_key = os.environ.get('PERPLEXITY_API_KEY')
@@ -444,12 +444,7 @@ def fetch_perplexity_links():
         # Construct the prompt for Perplexity AI
         prompt = f"""Give me ten links to articles from {yesterday} (or thereabouts) about news stories, announcements by tech companies, court cases, regulatory actions, or other occurrences that relate to the intersection of law, technology, and business. Focus on articles about intellectual property issues, open source licensing and compliance, and data privacy. For each article, give me the URL and the date of the article in MM-DD-YYYY format."""
         
-        # Prepare the request to Perplexity API
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
-        }
-        
+        # Prepare the request payload that would be sent to Perplexity API
         payload = {
             "model": "sonar-deep-research",
             "temperature": 0.0,
@@ -466,42 +461,16 @@ def fetch_perplexity_links():
             ]    
         }
         
-        # Log the request (without API key)
-        current_app.logger.info(f"Sending request to Perplexity API with prompt: {prompt}")
+        # Log the payload (without API key)
+        current_app.logger.info(f"Payload that would be sent to Perplexity API: {payload}")
         
-        # Make the request to Perplexity API
-        response = requests.post(
-            "https://api.perplexity.ai/chat/completions",
-            headers=headers,
-            json=payload
-        )
-        
-        # Check if the request was successful
-        response.raise_for_status()
-        
-        # Parse the response
-        perplexity_response = response.json()
-        
-        # Extract the content from the response
-        if 'choices' not in perplexity_response or not perplexity_response['choices']:
-            raise ValueError("Invalid response format from Perplexity API")
-        
-        # Get the raw content
-        raw_content = perplexity_response['choices'][0]['message']['content']
-        
-        # Log the raw content
-        current_app.logger.info(f"Raw content from Perplexity API: {raw_content}")
-        
-        # Return the raw content for debugging
+        # Return the payload for debugging
         return jsonify({
             'debug': True,
-            'raw_content': raw_content,
-            'message': 'This is the raw content from Perplexity AI for debugging purposes. No links have been saved to the database.'
+            'request_payload': payload,
+            'message': 'This is the JSON object that would be sent to Perplexity AI for debugging purposes. No API call has been made and no links have been saved to the database.'
         })
         
-    except requests.exceptions.RequestException as e:
-        current_app.logger.error(f"Request to Perplexity API failed: {str(e)}")
-        return jsonify({'error': f'Failed to connect to Perplexity API: {str(e)}'}), 500
     except Exception as e:
-        current_app.logger.error(f"Error fetching from Perplexity: {str(e)}")
-        return jsonify({'error': f'Error fetching from Perplexity: {str(e)}'}), 500
+        current_app.logger.error(f"Error preparing Perplexity request: {str(e)}")
+        return jsonify({'error': f'Error preparing Perplexity request: {str(e)}'}), 500
