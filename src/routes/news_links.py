@@ -11,6 +11,7 @@ import re
 from slugify import slugify
 import random
 import string
+import urllib.parse
 
 news_links_bp = Blueprint('news_links', __name__, url_prefix='/admin/news-links')
 
@@ -262,6 +263,165 @@ def generate_article():
         current_app.logger.error(f"Error generating article: {e}")
         return jsonify({'error': str(e)}), 500
 
+def extract_urls_and_dates(text):
+    """
+    Extract URLs and associated dates from unstructured text.
+    
+    This function uses regex to find URLs and dates in any format, then
+    associates each URL with the closest date that appears near it.
+    
+    Args:
+        text (str): The unstructured text to parse
+    
+    Returns:
+        list: A list of dictionaries with 'url' and 'date_of_article' keys
+    """
+    # Regex for finding URLs
+    # This pattern matches common URL formats including http, https, www prefixes
+    url_pattern = r'https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+(?:/[-\w%!.~\'*,;:=+$/?#[\]@&]+)*'
+    
+    # Regex patterns for finding dates in various formats
+    date_patterns = [
+        # MM-DD-YYYY or MM/DD/YYYY
+        r'(0?[1-9]|1[0-2])[-/](0?[1-9]|[12]\d|3[01])[-/](20\d{2})',
+        # YYYY-MM-DD or YYYY/MM/DD
+        r'(20\d{2})[-/](0?[1-9]|1[0-2])[-/](0?[1-9]|[12]\d|3[01])',
+        # Month DD, YYYY (e.g., January 1, 2023)
+        r'(January|February|March|April|May|June|July|August|September|October|November|December)\s+(0?[1-9]|[12]\d|3[01]),?\s+(20\d{2})',
+        # Abbreviated month (e.g., Jan 1, 2023)
+        r'(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(0?[1-9]|[12]\d|3[01]),?\s+(20\d{2})',
+        # DD Month YYYY (e.g., 1 January 2023)
+        r'(0?[1-9]|[12]\d|3[01])\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(20\d{2})',
+        # DD abbreviated month YYYY (e.g., 1 Jan 2023)
+        r'(0?[1-9]|[12]\d|3[01])\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(20\d{2})'
+    ]
+    
+    # Find all URLs in the text
+    urls = re.findall(url_pattern, text)
+    
+    # Clean and validate URLs
+    valid_urls = []
+    for url in urls:
+        # Normalize URL
+        url = url.strip()
+        
+        # Skip empty URLs
+        if not url:
+            continue
+            
+        # Ensure URL has a scheme
+        if not url.startswith(('http://', 'https://')):
+            url = 'https://' + url
+            
+        # Validate URL format
+        try:
+            parsed = urllib.parse.urlparse(url)
+            if all([parsed.scheme, parsed.netloc]):
+                valid_urls.append(url)
+        except Exception as e:
+            current_app.logger.warning(f"Invalid URL format: {url}, error: {e}")
+            continue
+    
+    # Find all dates in the text
+    all_dates = []
+    for pattern in date_patterns:
+        matches = re.finditer(pattern, text)
+        for match in matches:
+            date_str = match.group(0)
+            position = match.start()
+            all_dates.append((date_str, position))
+    
+    # Sort dates by their position in the text
+    all_dates.sort(key=lambda x: x[1])
+    
+    # Find positions of all URLs in the text
+    url_positions = []
+    for url in valid_urls:
+        # Find all occurrences of this URL in the text
+        for match in re.finditer(re.escape(url), text):
+            url_positions.append((url, match.start()))
+    
+    # Sort URLs by their position in the text
+    url_positions.sort(key=lambda x: x[1])
+    
+    # Associate each URL with the nearest date
+    results = []
+    
+    # If we have URLs but no dates, add URLs with None dates
+    if url_positions and not all_dates:
+        for url, _ in url_positions:
+            results.append({
+                'url': url,
+                'date_of_article': None
+            })
+        return results
+    
+    # If we have dates but no URLs, return empty list
+    if not url_positions:
+        return []
+    
+    # Process URLs and associate with dates
+    for i, (url, url_pos) in enumerate(url_positions):
+        # Find the closest date before or after this URL
+        closest_date = None
+        min_distance = float('inf')
+        
+        for date_str, date_pos in all_dates:
+            distance = abs(url_pos - date_pos)
+            
+            # If this is the closest date so far, use it
+            if distance < min_distance:
+                min_distance = distance
+                closest_date = date_str
+        
+        # Parse the date if we found one
+        parsed_date = None
+        if closest_date:
+            parsed_date = parse_date_string(closest_date)
+        
+        # Add the URL and date to results
+        results.append({
+            'url': url,
+            'date_of_article': parsed_date
+        })
+    
+    return results
+
+def parse_date_string(date_str):
+    """
+    Parse a date string in various formats and return a datetime.date object.
+    
+    Args:
+        date_str (str): The date string to parse
+    
+    Returns:
+        datetime.date or None: The parsed date or None if parsing fails
+    """
+    # List of date formats to try
+    formats = [
+        '%m-%d-%Y',  # MM-DD-YYYY
+        '%m/%d/%Y',  # MM/DD/YYYY
+        '%Y-%m-%d',  # YYYY-MM-DD
+        '%Y/%m/%d',  # YYYY/MM/DD
+        '%B %d, %Y',  # Month DD, YYYY
+        '%B %d %Y',   # Month DD YYYY
+        '%b %d, %Y',  # Abbreviated month DD, YYYY
+        '%b %d %Y',   # Abbreviated month DD YYYY
+        '%d %B %Y',   # DD Month YYYY
+        '%d %b %Y',   # DD Abbreviated month YYYY
+    ]
+    
+    # Try each format
+    for fmt in formats:
+        try:
+            return datetime.strptime(date_str, fmt).date()
+        except ValueError:
+            continue
+    
+    # If all formats fail, log warning and return None
+    current_app.logger.warning(f"Could not parse date: {date_str}")
+    return None
+
 @news_links_bp.route('/api/fetch-perplexity', methods=['POST'])
 @login_required
 def fetch_perplexity_links():
@@ -277,14 +437,7 @@ def fetch_perplexity_links():
         yesterday = (datetime.now() - timedelta(days=1)).strftime('%B %d, %Y')
         
         # Construct the prompt for Perplexity AI
-        prompt = f"""Give me ten links to articles from {yesterday} (or thereabouts) about news stories, announcements by tech companies, court cases, regulatory actions, or other occurrences that relate to the intersection of law, technology, and business. Focus on articles about intellectual property issues, open source licensing and compliance, and data privacy. For each article, give me the URL and the date of the article in MM-DD-YYYY format. Don't give me any text or commentary other than the URLs and the dates. Return the data as an array of JSON objects in the following format:
-
-{{
-"url": string
-"date_of_article": string
-}}
-
-Only return the JSON object, nothing else."""
+        prompt = f"""Give me ten links to articles from {yesterday} (or thereabouts) about news stories, announcements by tech companies, court cases, regulatory actions, or other occurrences that relate to the intersection of law, technology, and business. Focus on articles about intellectual property issues, open source licensing and compliance, and data privacy. For each article, give me the URL and the date of the article in MM-DD-YYYY format."""
         
         # Prepare the request to Perplexity API
         headers = {
@@ -329,69 +482,91 @@ Only return the JSON object, nothing else."""
             raise ValueError("Invalid response format from Perplexity API")
         
         content = perplexity_response['choices'][0]['message']['content']
+        current_app.logger.info(f"Received content from Perplexity API: {content[:500]}...")
         
-        # Try to extract JSON from the content
-        # First, look for JSON array in the content
+        # First try to parse as JSON (in case Perplexity did return JSON)
         try:
             # Try to find JSON array in the content
             start_idx = content.find('[')
             end_idx = content.rfind(']') + 1
             
-            if start_idx == -1 or end_idx == 0:
-                # If no array brackets found, try to parse the whole content
-                links_data = json.loads(content)
-            else:
+            if start_idx != -1 and end_idx > 0:
                 # Extract the JSON array
                 json_str = content[start_idx:end_idx]
                 links_data = json.loads(json_str)
                 
-            # Ensure links_data is a list
-            if not isinstance(links_data, list):
-                if isinstance(links_data, dict):
-                    # If it's a single object, wrap it in a list
-                    links_data = [links_data]
-                else:
-                    raise ValueError("Response is not a valid JSON array or object")
+                # Ensure links_data is a list
+                if not isinstance(links_data, list):
+                    if isinstance(links_data, dict):
+                        # If it's a single object, wrap it in a list
+                        links_data = [links_data]
+                    else:
+                        # If it's not a list or dict, fall back to text parsing
+                        raise ValueError("Response is not a valid JSON array or object")
+                
+                # Process JSON data
+                processed_links = []
+                today = datetime.now().date()
+                
+                for link_data in links_data:
+                    # Validate required fields
+                    if not isinstance(link_data, dict) or 'url' not in link_data:
+                        current_app.logger.warning(f"Skipping invalid link data: {link_data}")
+                        continue
+                        
+                    url = link_data.get('url', '').strip()
+                    date_str = link_data.get('date_of_article', '').strip()
                     
-        except json.JSONDecodeError:
-            current_app.logger.error(f"Failed to parse JSON from Perplexity response: {content}")
-            return jsonify({'error': 'Failed to parse JSON from Perplexity response'}), 500
+                    # Skip if URL is empty
+                    if not url:
+                        current_app.logger.warning("Skipping link with empty URL")
+                        continue
+                    
+                    # Parse date if available
+                    date_of_article = None
+                    if date_str:
+                        date_of_article = parse_date_string(date_str)
+                    
+                    # Create and save the news link
+                    link = NewsLink(
+                        url=url,
+                        date_of_article=date_of_article,
+                        date_fetched=today,
+                        article_written=False
+                    )
+                    
+                    db.session.add(link)
+                    processed_links.append(link.to_dict())
+                
+                # Commit all links to the database
+                db.session.commit()
+                
+                # Return success response with processed links
+                return jsonify({
+                    'success': True,
+                    'links': processed_links,
+                    'count': len(processed_links),
+                    'source': 'json'
+                })
+                
+        except (json.JSONDecodeError, ValueError) as e:
+            # JSON parsing failed, fall back to text parsing
+            current_app.logger.info(f"JSON parsing failed, falling back to text extraction: {e}")
         
-        # Validate and process each link
+        # Extract URLs and dates from unstructured text
+        extracted_data = extract_urls_and_dates(content)
+        
+        if not extracted_data:
+            current_app.logger.warning("No URLs found in Perplexity response")
+            return jsonify({'error': 'No valid URLs found in Perplexity response'}), 500
+        
+        # Process extracted data
         processed_links = []
         today = datetime.now().date()
         
-        for link_data in links_data:
-            # Validate required fields
-            if not isinstance(link_data, dict) or 'url' not in link_data:
-                current_app.logger.warning(f"Skipping invalid link data: {link_data}")
-                continue
-                
-            url = link_data.get('url', '').strip()
-            date_str = link_data.get('date_of_article', '').strip()
-            
-            # Skip if URL is empty
-            if not url:
-                current_app.logger.warning("Skipping link with empty URL")
-                continue
-                
-            # Parse date if available
-            date_of_article = None
-            if date_str:
-                try:
-                    # Try to parse MM-DD-YYYY format
-                    date_of_article = datetime.strptime(date_str, '%m-%d-%Y').date()
-                except ValueError:
-                    try:
-                        # Try alternative formats
-                        for fmt in ['%Y-%m-%d', '%d-%m-%Y', '%B %d, %Y', '%b %d, %Y']:
-                            try:
-                                date_of_article = datetime.strptime(date_str, fmt).date()
-                                break
-                            except ValueError:
-                                continue
-                    except Exception as e:
-                        current_app.logger.warning(f"Could not parse date '{date_str}': {e}")
+        for item in extracted_data:
+            url = item['url']
+            date_of_article = item['date_of_article']
             
             # Create and save the news link
             link = NewsLink(
@@ -402,7 +577,12 @@ Only return the JSON object, nothing else."""
             )
             
             db.session.add(link)
-            processed_links.append(link.to_dict())
+            processed_links.append({
+                'url': url,
+                'date_of_article': date_of_article.isoformat() if date_of_article else None,
+                'date_fetched': today.isoformat(),
+                'article_written': False
+            })
         
         # Commit all links to the database
         db.session.commit()
@@ -411,12 +591,14 @@ Only return the JSON object, nothing else."""
         return jsonify({
             'success': True,
             'links': processed_links,
-            'count': len(processed_links)
+            'count': len(processed_links),
+            'source': 'text'
         })
         
     except requests.exceptions.RequestException as e:
         current_app.logger.error(f"Request to Perplexity API failed: {str(e)}")
         return jsonify({'error': f'Failed to connect to Perplexity API: {str(e)}'}), 500
     except Exception as e:
+        db.session.rollback()
         current_app.logger.error(f"Error fetching links from Perplexity: {str(e)}")
         return jsonify({'error': f'Error fetching links from Perplexity: {str(e)}'}), 500
