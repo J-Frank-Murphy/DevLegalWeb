@@ -430,6 +430,7 @@ def fetch_perplexity_links():
     
     This version returns the payload that would be sent to Perplexity AI
     without actually making the API call or saving anything to the database.
+    It also includes an empty links array to prevent frontend JS errors.
     """
     # Check if Perplexity API key is configured
     api_key = os.environ.get('PERPLEXITY_API_KEY')
@@ -442,7 +443,14 @@ def fetch_perplexity_links():
         yesterday = (datetime.now() - timedelta(days=1)).strftime('%B %d, %Y')
         
         # Construct the prompt for Perplexity AI
-        prompt = f"""Give me ten links to articles from {yesterday} (or thereabouts) about news stories, announcements by tech companies, court cases, regulatory actions, or other occurrences that relate to the intersection of law, technology, and business. Focus on articles about intellectual property issues, open source licensing and compliance, and data privacy. For each article, give me the URL and the date of the article in MM-DD-YYYY format."""
+        prompt = f"""Give me ten links to articles from {yesterday} (or thereabouts) about news stories, announcements by tech companies, court cases, regulatory actions, or other occurrences that relate to the intersection of law, technology, and business. Focus on articles about intellectual property issues, open source licensing and compliance, and data privacy. For each article, give me the URL and the date of the article in MM-DD-YYYY format. Don't give me any text or commentary other than the URLs and the dates. Return the data as an array of JSON objects in the following format:
+
+{{
+"url": string
+"date_of_article": string
+}}
+
+Only return the JSON object, nothing else."""
         
         # Prepare the request payload that would be sent to Perplexity API
         payload = {
@@ -464,10 +472,13 @@ def fetch_perplexity_links():
         # Log the payload (without API key)
         current_app.logger.info(f"Payload that would be sent to Perplexity API: {payload}")
         
-        # Return the payload for debugging
+        # Return the payload for debugging, including an empty links array to prevent frontend JS errors
         return jsonify({
+            'success': True,
             'debug': True,
             'request_payload': payload,
+            'links': [],  # Empty array to prevent frontend JS errors
+            'count': 0,
             'message': 'This is the JSON object that would be sent to Perplexity AI for debugging purposes. No API call has been made and no links have been saved to the database.'
         })
         
