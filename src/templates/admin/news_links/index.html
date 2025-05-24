@@ -7,8 +7,11 @@
 {% block content %}
 <div class="admin-content">
     <div class="card">
-        <div class="card-header">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h2>Add New Link</h2>
+            <button id="fetchPerplexityLinks" class="btn btn-primary">
+                <i class="fas fa-robot me-2"></i>Fetch Links from Perplexity AI
+            </button>
         </div>
         <div class="card-body">
             <form id="newLinkForm" class="row g-3">
@@ -41,6 +44,29 @@
                     <button type="submit" class="btn btn-primary">Add Link</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Perplexity Fetch Status Card -->
+    <div id="perplexityStatusCard" class="card mt-4 d-none">
+        <div class="card-header bg-info text-white">
+            <h2>Perplexity AI Fetch Status</h2>
+        </div>
+        <div class="card-body">
+            <div id="perplexityStatus" class="alert alert-info">
+                <div class="d-flex align-items-center">
+                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span>Fetching links from Perplexity AI...</span>
+                </div>
+            </div>
+            <div id="perplexityResults" class="d-none">
+                <h4>Results:</h4>
+                <ul id="perplexityLinksList" class="list-group">
+                    <!-- Results will be populated here -->
+                </ul>
+            </div>
         </div>
     </div>
 
@@ -133,6 +159,20 @@
         gap: 5px;
         flex-wrap: wrap;
     }
+    #perplexityLinksList .list-group-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    #perplexityLinksList .badge {
+        font-size: 0.8rem;
+    }
+    .perplexity-link-url {
+        max-width: 80%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 </style>
 {% endblock %}
 
@@ -143,13 +183,105 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Load all links when the page loads
         loadLinks();
-
+        
         // Set up the form submission for adding a new link
         document.getElementById('newLinkForm').addEventListener('submit', function(e) {
             e.preventDefault();
             addNewLink();
         });
+
+        // Set up the Perplexity AI fetch button
+        document.getElementById('fetchPerplexityLinks').addEventListener('click', function(e) {
+            e.preventDefault();
+            fetchPerplexityLinks();
+        });
     });
+
+    // Function to fetch links from Perplexity AI
+    function fetchPerplexityLinks() {
+        // Show the status card
+        const statusCard = document.getElementById('perplexityStatusCard');
+        const statusAlert = document.getElementById('perplexityStatus');
+        const resultsDiv = document.getElementById('perplexityResults');
+        const linksList = document.getElementById('perplexityLinksList');
+        
+        statusCard.classList.remove('d-none');
+        statusAlert.className = 'alert alert-info';
+        statusAlert.innerHTML = `
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-2" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <span>Fetching links from Perplexity AI...</span>
+            </div>
+        `;
+        resultsDiv.classList.add('d-none');
+        linksList.innerHTML = '';
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // Send request to backend
+        fetch('/admin/news-links/api/fetch-perplexity', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Failed to fetch links from Perplexity AI');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Update status
+            statusAlert.className = 'alert alert-success';
+            statusAlert.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <span>Successfully fetched ${data.links.length} links from Perplexity AI!</span>
+                </div>
+            `;
+            
+            // Show results
+            resultsDiv.classList.remove('d-none');
+            
+            // Populate links list
+            data.links.forEach(link => {
+                const listItem = document.createElement('li');
+                listItem.className = 'list-group-item';
+                
+                const urlSpan = document.createElement('span');
+                urlSpan.className = 'perplexity-link-url';
+                urlSpan.textContent = link.url;
+                
+                const dateBadge = document.createElement('span');
+                dateBadge.className = 'badge bg-secondary';
+                dateBadge.textContent = link.date_of_article;
+                
+                listItem.appendChild(urlSpan);
+                listItem.appendChild(dateBadge);
+                linksList.appendChild(listItem);
+            });
+            
+            // Reload the links table to show the new links
+            loadLinks();
+        })
+        .catch(error => {
+            console.error('Error fetching from Perplexity:', error);
+            statusAlert.className = 'alert alert-danger';
+            statusAlert.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <span>${error.message || 'An error occurred while fetching links from Perplexity AI'}</span>
+                </div>
+            `;
+        });
+    }
 
     // Function to load all links
     function loadLinks() {
@@ -163,6 +295,7 @@
             .then(links => {
                 const tableBody = document.getElementById('linksTableBody');
                 tableBody.innerHTML = '';
+                
                 links.forEach(link => {
                     const row = createLinkRow(link);
                     tableBody.appendChild(row);
@@ -178,11 +311,12 @@
     function createLinkRow(link) {
         const row = document.createElement('tr');
         row.dataset.id = link.id;
-
+        
         // URL cell with input and open button
         const urlCell = document.createElement('td');
         const urlContainer = document.createElement('div');
         urlContainer.className = 'url-container';
+        
         const urlInput = document.createElement('input');
         urlInput.type = 'text';
         urlInput.className = 'form-control url-input';
@@ -191,7 +325,7 @@
         urlInput.addEventListener('input', function() {
             handleFieldChange(row);
         });
-
+        
         const openUrlBtn = document.createElement('button');
         openUrlBtn.className = 'btn btn-sm btn-outline-secondary btn-open-url';
         openUrlBtn.innerHTML = '<i class="fas fa-external-link-alt"></i>';
@@ -199,11 +333,11 @@
         openUrlBtn.addEventListener('click', function() {
             window.open(urlInput.value, '_blank');
         });
-
+        
         urlContainer.appendChild(urlInput);
         urlContainer.appendChild(openUrlBtn);
         urlCell.appendChild(urlContainer);
-
+        
         // Date of Article cell
         const dateOfArticleCell = document.createElement('td');
         const dateOfArticleInput = document.createElement('input');
@@ -215,7 +349,7 @@
             handleFieldChange(row);
         });
         dateOfArticleCell.appendChild(dateOfArticleInput);
-
+        
         // Date Fetched cell
         const dateFetchedCell = document.createElement('td');
         const dateFetchedInput = document.createElement('input');
@@ -237,26 +371,24 @@
         focusOfArticleInput.dataset.original = link.focus_of_article || '';
         focusOfArticleInput.addEventListener('input', function() {
             handleFieldChange(row);
-            updateWriteArticleButton(row);
         });
         focusOfArticleCell.appendChild(focusOfArticleInput);
-
+        
         // Article Written cell with checkbox
         const articleWrittenCell = document.createElement('td');
         const articleWrittenCheckbox = document.createElement('input');
         articleWrittenCheckbox.type = 'checkbox';
         articleWrittenCheckbox.className = 'form-check-input';
         articleWrittenCheckbox.checked = link.article_written;
-        articleWrittenCheckbox.dataset.original = link.article_written.toString();
+        articleWrittenCheckbox.dataset.original = link.article_written;
         articleWrittenCheckbox.addEventListener('change', function() {
             handleFieldChange(row);
         });
         articleWrittenCell.appendChild(articleWrittenCheckbox);
-
+        
         // Actions cell with Save, Write Article, and Delete buttons
         const actionsCell = document.createElement('td');
-        const actionButtonsContainer = document.createElement('div');
-        actionButtonsContainer.className = 'action-buttons';
+        actionsCell.className = 'action-buttons';
         
         const saveBtn = document.createElement('button');
         saveBtn.className = 'btn btn-sm btn-success save-btn';
@@ -265,27 +397,26 @@
         saveBtn.addEventListener('click', function() {
             saveLink(row);
         });
-
+        
         const writeArticleBtn = document.createElement('button');
         writeArticleBtn.className = 'btn btn-sm btn-primary write-article-btn';
         writeArticleBtn.textContent = 'Write Article';
-        writeArticleBtn.disabled = !link.focus_of_article; // Disable if focus is empty
+        writeArticleBtn.disabled = link.article_written;
         writeArticleBtn.addEventListener('click', function() {
             writeArticle(row);
         });
-
+        
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'btn btn-sm btn-danger delete-btn';
         deleteBtn.textContent = 'Delete';
         deleteBtn.addEventListener('click', function() {
             showDeleteConfirmation(link.id);
         });
-
-        actionButtonsContainer.appendChild(saveBtn);
-        actionButtonsContainer.appendChild(writeArticleBtn);
-        actionButtonsContainer.appendChild(deleteBtn);
-        actionsCell.appendChild(actionButtonsContainer);
-
+        
+        actionsCell.appendChild(saveBtn);
+        actionsCell.appendChild(writeArticleBtn);
+        actionsCell.appendChild(deleteBtn);
+        
         // Add all cells to the row
         row.appendChild(urlCell);
         row.appendChild(dateOfArticleCell);
@@ -293,60 +424,50 @@
         row.appendChild(focusOfArticleCell);
         row.appendChild(articleWrittenCell);
         row.appendChild(actionsCell);
-
-        return row;
-    }
-
-    // Function to update Write Article button state
-    function updateWriteArticleButton(row) {
-        const focusOfArticleInput = row.querySelector('.focus-input');
-        const writeArticleBtn = row.querySelector('.write-article-btn');
         
-        // Enable the button only if focus of article is not empty
-        writeArticleBtn.disabled = !focusOfArticleInput.value.trim();
+        return row;
     }
 
     // Function to handle field changes
     function handleFieldChange(row) {
         const saveBtn = row.querySelector('.save-btn');
         const urlInput = row.querySelector('.url-input');
-        const dateOfArticleInput = row.querySelector('td:nth-child(2) input');
-        const dateFetchedInput = row.querySelector('td:nth-child(3) input');
+        const dateOfArticleInput = row.querySelector('input[type="date"]:nth-of-type(1)');
+        const dateFetchedInput = row.querySelector('input[type="date"]:nth-of-type(2)');
         const focusOfArticleInput = row.querySelector('.focus-input');
         const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
-
+        
         // Check if any field has changed
         const urlChanged = urlInput.value !== urlInput.dataset.original;
         const dateOfArticleChanged = dateOfArticleInput.value !== dateOfArticleInput.dataset.original;
         const dateFetchedChanged = dateFetchedInput.value !== dateFetchedInput.dataset.original;
         const focusOfArticleChanged = focusOfArticleInput.value !== focusOfArticleInput.dataset.original;
         const articleWrittenChanged = articleWrittenCheckbox.checked.toString() !== articleWrittenCheckbox.dataset.original;
-
-        // Enable/disable save button based on changes
+        
         const hasChanges = urlChanged || dateOfArticleChanged || dateFetchedChanged || focusOfArticleChanged || articleWrittenChanged;
+        
+        // Enable/disable save button based on changes
         saveBtn.disabled = !hasChanges;
-
-        // Highlight changed fields
-        urlInput.parentElement.parentElement.classList.toggle('modified', urlChanged);
-        dateOfArticleInput.parentElement.classList.toggle('modified', dateOfArticleChanged);
-        dateFetchedInput.parentElement.classList.toggle('modified', dateFetchedChanged);
-        focusOfArticleInput.parentElement.classList.toggle('modified', focusOfArticleChanged);
-        articleWrittenCheckbox.parentElement.classList.toggle('modified', articleWrittenChanged);
+        
+        // Add/remove modified class to highlight changes
+        if (hasChanges) {
+            row.classList.add('modified');
+        } else {
+            row.classList.remove('modified');
+        }
     }
 
     // Function to save link changes
     function saveLink(row) {
         const linkId = row.dataset.id;
         const urlInput = row.querySelector('.url-input');
-        const dateOfArticleInput = row.querySelector('td:nth-child(2) input');
-        const dateFetchedInput = row.querySelector('td:nth-child(3) input');
+        const dateOfArticleInput = row.querySelector('input[type="date"]:nth-of-type(1)');
+        const dateFetchedInput = row.querySelector('input[type="date"]:nth-of-type(2)');
         const focusOfArticleInput = row.querySelector('.focus-input');
         const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
         const saveBtn = row.querySelector('.save-btn');
-
-        // Get CSRF token
-        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-
+        const writeArticleBtn = row.querySelector('.write-article-btn');
+        
         // Prepare data for update
         const data = {
             url: urlInput.value,
@@ -355,11 +476,14 @@
             focus_of_article: focusOfArticleInput.value || null,
             article_written: articleWrittenCheckbox.checked
         };
-
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
         // Disable save button during save
         saveBtn.disabled = true;
         saveBtn.textContent = 'Saving...';
-
+        
         // Send update request
         fetch(`/admin/news-links/api/links/${linkId}`, {
             method: 'PUT',
@@ -371,7 +495,9 @@
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok: ' + response.status);
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Failed to save changes');
+                });
             }
             return response.json();
         })
@@ -381,55 +507,57 @@
             dateOfArticleInput.dataset.original = updatedLink.date_of_article || '';
             dateFetchedInput.dataset.original = updatedLink.date_fetched || '';
             focusOfArticleInput.dataset.original = updatedLink.focus_of_article || '';
-            articleWrittenCheckbox.dataset.original = updatedLink.article_written.toString();
-
-            // Reset modified styling
-            urlInput.parentElement.parentElement.classList.remove('modified');
-            dateOfArticleInput.parentElement.classList.remove('modified');
-            dateFetchedInput.parentElement.classList.remove('modified');
-            focusOfArticleInput.parentElement.classList.remove('modified');
-            articleWrittenCheckbox.parentElement.classList.remove('modified');
-
-            // Reset save button
+            articleWrittenCheckbox.dataset.original = updatedLink.article_written;
+            
+            // Reset UI
             saveBtn.textContent = 'Save';
-            saveBtn.disabled = true;
+            row.classList.remove('modified');
             
             // Update Write Article button state
-            updateWriteArticleButton(row);
+            writeArticleBtn.disabled = updatedLink.article_written;
+            
+            // Show success message
+            showToast('Changes saved successfully');
         })
         .catch(error => {
-            console.error('Error updating link:', error);
-            alert('Failed to update link. Please try again. Error: ' + error.message);
+            console.error('Error saving link:', error);
+            alert('Failed to save changes: ' + error.message);
             saveBtn.textContent = 'Save';
             saveBtn.disabled = false;
         });
     }
 
-    // Function to write article using AI
+    // Function to write an article
     function writeArticle(row) {
         const linkId = row.dataset.id;
         const urlInput = row.querySelector('.url-input');
         const focusOfArticleInput = row.querySelector('.focus-input');
-        const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
         const writeArticleBtn = row.querySelector('.write-article-btn');
         
+        // Check if focus of article is provided
+        if (!focusOfArticleInput.value.trim()) {
+            alert('Please provide a focus for the article before generating content.');
+            focusOfArticleInput.focus();
+            return;
+        }
+        
         // Get CSRF token
-        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         
-        // Disable the button and show loading state
-        writeArticleBtn.disabled = true;
-        writeArticleBtn.textContent = 'Processing...';
-        
-        // Show the modal with progress indicator
-        const modal = new bootstrap.Modal(document.getElementById('writeArticleModal'));
-        modal.show();
-        
-        // Prepare data for the request
+        // Prepare data for article generation
         const data = {
             link_id: linkId,
             url: urlInput.value,
             focus_of_article: focusOfArticleInput.value
         };
+        
+        // Disable button and show modal
+        writeArticleBtn.disabled = true;
+        writeArticleBtn.textContent = 'Writing...';
+        
+        // Show the writing modal
+        const writeArticleModal = new bootstrap.Modal(document.getElementById('writeArticleModal'));
+        writeArticleModal.show();
         
         // Send request to generate article
         fetch('/admin/news-links/api/generate-article', {
@@ -442,37 +570,45 @@
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok: ' + response.status);
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Failed to generate article');
+                });
             }
             return response.json();
         })
         .then(result => {
             // Hide the modal
-            modal.hide();
+            writeArticleModal.hide();
             
-            // Update the article written checkbox
+            // Update UI
+            const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
             articleWrittenCheckbox.checked = true;
             articleWrittenCheckbox.dataset.original = 'true';
             
-            // Reset button state
+            writeArticleBtn.disabled = true;
             writeArticleBtn.textContent = 'Write Article';
-            writeArticleBtn.disabled = false;
             
             // Show success message
-            alert(`Article "${result.title}" has been created successfully!`);
+            showToast(`Article "${result.post_title}" created successfully!`);
+            
+            // Update the focus of article in case it was changed
+            focusOfArticleInput.dataset.original = focusOfArticleInput.value;
+            
+            // Remove modified class if it was only the focus that changed
+            handleFieldChange(row);
         })
         .catch(error => {
             console.error('Error generating article:', error);
             
             // Hide the modal
-            modal.hide();
+            writeArticleModal.hide();
             
-            // Reset button state
+            // Reset button
+            writeArticleBtn.disabled = false;
             writeArticleBtn.textContent = 'Write Article';
-            writeArticleBtn.disabled = !focusOfArticleInput.value.trim();
             
             // Show error message
-            alert('Failed to generate article. Please try again. Error: ' + error.message);
+            alert('Failed to generate article: ' + error.message);
         });
     }
 
@@ -481,7 +617,7 @@
         const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
         const confirmBtn = document.getElementById('confirmDeleteBtn');
         
-        // Set up the confirm button to delete the link when clicked
+        // Set up the confirm button to delete the link
         confirmBtn.onclick = function() {
             deleteLink(linkId);
             modal.hide();
@@ -493,7 +629,7 @@
     // Function to delete a link
     function deleteLink(linkId) {
         // Get CSRF token
-        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         
         fetch(`/admin/news-links/api/links/${linkId}`, {
             method: 'DELETE',
@@ -503,22 +639,25 @@
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok: ' + response.status);
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Failed to delete link');
+                });
             }
             return response.json();
         })
         .then(data => {
-            if (data.success) {
-                // Remove the row from the table
-                const row = document.querySelector(`tr[data-id="${linkId}"]`);
-                if (row) {
-                    row.remove();
-                }
+            // Remove the row from the table
+            const row = document.querySelector(`tr[data-id="${linkId}"]`);
+            if (row) {
+                row.remove();
             }
+            
+            // Show success message
+            showToast('Link deleted successfully');
         })
         .catch(error => {
             console.error('Error deleting link:', error);
-            alert('Failed to delete link. Please try again. Error: ' + error.message);
+            alert('Failed to delete link: ' + error.message);
         });
     }
 
@@ -530,9 +669,6 @@
         const focusOfArticleInput = document.getElementById('newFocusOfArticle');
         const articleWrittenCheckbox = document.getElementById('newArticleWritten');
         
-        // Get CSRF token
-        const csrfToken = document.querySelector('input[name="csrf_token"]').value;
-
         // Prepare data for new link
         const data = {
             url: urlInput.value,
@@ -541,7 +677,10 @@
             focus_of_article: focusOfArticleInput.value || null,
             article_written: articleWrittenCheckbox.checked
         };
-
+        
+        // Get CSRF token
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
         // Send create request
         fetch('/admin/news-links/api/links', {
             method: 'POST',
@@ -553,7 +692,9 @@
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok: ' + response.status);
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Failed to add new link');
+                });
             }
             return response.json();
         })
@@ -565,10 +706,50 @@
             
             // Reset the form
             document.getElementById('newLinkForm').reset();
+            
+            // Show success message
+            showToast('New link added successfully');
         })
         .catch(error => {
-            console.error('Error adding new link:', error);
-            alert('Failed to add new link. Please try again. Error: ' + error.message);
+            console.error('Error adding link:', error);
+            alert('Failed to add new link: ' + error.message);
+        });
+    }
+
+    // Function to show a toast message
+    function showToast(message) {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            document.body.appendChild(toastContainer);
+        }
+        
+        // Create toast element
+        const toastId = 'toast-' + Date.now();
+        const toastHtml = `
+            <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <strong class="me-auto">Notification</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    ${message}
+                </div>
+            </div>
+        `;
+        
+        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+        
+        // Initialize and show the toast
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+        toast.show();
+        
+        // Remove toast after it's hidden
+        toastElement.addEventListener('hidden.bs.toast', function() {
+            toastElement.remove();
         });
     }
 </script>
