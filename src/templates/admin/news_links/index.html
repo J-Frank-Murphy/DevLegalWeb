@@ -133,6 +133,9 @@
     </div>
 </div>
 
+<!-- Custom Toast Container - For notifications -->
+<div id="customToastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
+
 <style>
     .url-container {
         display: flex;
@@ -181,6 +184,47 @@
     .modal.show {
         display: block;
         background-color: rgba(0, 0, 0, 0.5);
+    }
+    /* Custom toast styling */
+    .custom-toast {
+        padding: 15px 20px;
+        background-color: #333;
+        color: white;
+        border-radius: 5px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 350px;
+        animation: fadeIn 0.3s, fadeOut 0.3s 2.7s;
+        opacity: 0;
+        animation-fill-mode: forwards;
+    }
+    .custom-toast.success {
+        background-color: #28a745;
+    }
+    .custom-toast.error {
+        background-color: #dc3545;
+    }
+    .custom-toast.info {
+        background-color: #17a2b8;
+    }
+    .custom-toast-close {
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+        margin-left: 10px;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeOut {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(-20px); }
     }
 </style>
 {% endblock %}
@@ -276,9 +320,13 @@
         })
         .then(response => {
             if (!response.ok) {
-                return response.json().then(data => {
-                    throw new Error(data.error || 'Failed to fetch links from Perplexity AI');
-                });
+                if (response.headers.get('content-type')?.includes('application/json')) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Failed to fetch links from Perplexity AI');
+                    });
+                } else {
+                    throw new Error('Server returned an error: ' + response.status);
+                }
             }
             return response.json();
         })
@@ -333,7 +381,13 @@
         fetch('/admin/news-links/api/links')
             .then(response => {
                 if (!response.ok) {
-                    throw new Error('Network response was not ok: ' + response.status);
+                    if (response.headers.get('content-type')?.includes('application/json')) {
+                        return response.json().then(data => {
+                            throw new Error(data.error || 'Failed to load links');
+                        });
+                    } else {
+                        throw new Error('Server returned an error: ' + response.status);
+                    }
                 }
                 return response.json();
             })
@@ -348,7 +402,7 @@
             })
             .catch(error => {
                 console.error('Error loading links:', error);
-                alert('Failed to load links. Please try again. Error: ' + error.message);
+                showCustomToast('Failed to load links. Please try again.', 'error');
             });
     }
 
@@ -540,9 +594,13 @@
         })
         .then(response => {
             if (!response.ok) {
-                return response.json().then(data => {
-                    throw new Error(data.error || 'Failed to save changes');
-                });
+                if (response.headers.get('content-type')?.includes('application/json')) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Failed to save changes');
+                    });
+                } else {
+                    throw new Error('Server returned an error: ' + response.status);
+                }
             }
             return response.json();
         })
@@ -562,11 +620,11 @@
             writeArticleBtn.disabled = updatedLink.article_written;
             
             // Show success message
-            showToast('Changes saved successfully');
+            showCustomToast('Changes saved successfully', 'success');
         })
         .catch(error => {
             console.error('Error saving link:', error);
-            alert('Failed to save changes: ' + error.message);
+            showCustomToast('Failed to save changes: ' + error.message, 'error');
             saveBtn.textContent = 'Save';
             saveBtn.disabled = false;
         });
@@ -581,7 +639,7 @@
         
         // Check if focus of article is provided
         if (!focusOfArticleInput.value.trim()) {
-            alert('Please provide a focus for the article before generating content.');
+            showCustomToast('Please provide a focus for the article before generating content.', 'error');
             focusOfArticleInput.focus();
             return;
         }
@@ -614,9 +672,13 @@
         })
         .then(response => {
             if (!response.ok) {
-                return response.json().then(data => {
-                    throw new Error(data.error || 'Failed to generate article');
-                });
+                if (response.headers.get('content-type')?.includes('application/json')) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Failed to generate article');
+                    });
+                } else {
+                    throw new Error('Server returned an error: ' + response.status);
+                }
             }
             return response.json();
         })
@@ -633,7 +695,7 @@
             writeArticleBtn.textContent = 'Write Article';
             
             // Show success message
-            showToast(`Article "${result.post_title}" created successfully!`);
+            showCustomToast(`Article "${result.post_title}" created successfully!`, 'success');
             
             // Update the focus of article in case it was changed
             focusOfArticleInput.dataset.original = focusOfArticleInput.value;
@@ -652,7 +714,7 @@
             writeArticleBtn.textContent = 'Write Article';
             
             // Show error message
-            alert('Failed to generate article: ' + error.message);
+            showCustomToast('Failed to generate article: ' + error.message, 'error');
         });
     }
 
@@ -664,14 +726,22 @@
         fetch(`/admin/news-links/api/links/${linkId}`, {
             method: 'DELETE',
             headers: {
+                'Content-Type': 'application/json',
                 'X-CSRFToken': csrfToken
             }
         })
         .then(response => {
             if (!response.ok) {
-                return response.json().then(data => {
-                    throw new Error(data.error || 'Failed to delete link');
-                });
+                if (response.headers.get('content-type')?.includes('application/json')) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Failed to delete link');
+                    });
+                } else {
+                    return response.text().then(text => {
+                        console.error('Non-JSON response:', text);
+                        throw new Error('Server returned a non-JSON response');
+                    });
+                }
             }
             return response.json();
         })
@@ -683,11 +753,11 @@
             }
             
             // Show success message
-            showToast('Link deleted successfully');
+            showCustomToast('Link deleted successfully', 'success');
         })
         .catch(error => {
             console.error('Error deleting link:', error);
-            alert('Failed to delete link: ' + error.message);
+            showCustomToast('Failed to delete link: ' + error.message, 'error');
         });
     }
 
@@ -722,9 +792,13 @@
         })
         .then(response => {
             if (!response.ok) {
-                return response.json().then(data => {
-                    throw new Error(data.error || 'Failed to add new link');
-                });
+                if (response.headers.get('content-type')?.includes('application/json')) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Failed to add new link');
+                    });
+                } else {
+                    throw new Error('Server returned an error: ' + response.status);
+                }
             }
             return response.json();
         })
@@ -738,49 +812,49 @@
             document.getElementById('newLinkForm').reset();
             
             // Show success message
-            showToast('New link added successfully');
+            showCustomToast('New link added successfully', 'success');
         })
         .catch(error => {
             console.error('Error adding link:', error);
-            alert('Failed to add new link: ' + error.message);
+            showCustomToast('Failed to add new link: ' + error.message, 'error');
         });
     }
 
-    // Function to show a toast message
-    function showToast(message) {
-        // Create toast container if it doesn't exist
-        let toastContainer = document.querySelector('.toast-container');
-        if (!toastContainer) {
-            toastContainer = document.createElement('div');
-            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-            document.body.appendChild(toastContainer);
-        }
-        
-        // Create toast element
+    // Function to show a custom toast message (no Bootstrap dependency)
+    function showCustomToast(message, type = 'info') {
+        const container = document.getElementById('customToastContainer');
         const toastId = 'toast-' + Date.now();
-        const toastHtml = `
-            <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="toast-header">
-                    <strong class="me-auto">Notification</strong>
-                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-                </div>
-                <div class="toast-body">
-                    ${message}
-                </div>
-            </div>
-        `;
         
-        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+        const toast = document.createElement('div');
+        toast.id = toastId;
+        toast.className = `custom-toast ${type}`;
         
-        // Initialize and show the toast
-        const toastElement = document.getElementById(toastId);
-        const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
-        toast.show();
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message;
         
-        // Remove toast after it's hidden
-        toastElement.addEventListener('hidden.bs.toast', function() {
-            toastElement.remove();
-        });
+        const closeButton = document.createElement('button');
+        closeButton.className = 'custom-toast-close';
+        closeButton.innerHTML = '&times;';
+        closeButton.onclick = function() {
+            document.getElementById(toastId).remove();
+        };
+        
+        toast.appendChild(messageSpan);
+        toast.appendChild(closeButton);
+        container.appendChild(toast);
+        
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            const toastElement = document.getElementById(toastId);
+            if (toastElement) {
+                // Wait for fadeOut animation to complete
+                setTimeout(() => {
+                    if (toastElement.parentNode) {
+                        toastElement.parentNode.removeChild(toastElement);
+                    }
+                }, 300);
+            }
+        }, 3000);
     }
 </script>
 {% endblock %}
