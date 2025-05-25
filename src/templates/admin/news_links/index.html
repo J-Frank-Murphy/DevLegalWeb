@@ -308,14 +308,14 @@
         linksList.innerHTML = '';
         
         // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         
         // Send request to backend
         fetch('/admin/news-links/api/fetch-perplexity', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
+                'X-CSRFToken': csrfToken || ''
             }
         })
         .then(response => {
@@ -419,8 +419,8 @@
         const urlInput = document.createElement('input');
         urlInput.type = 'text';
         urlInput.className = 'form-control url-input';
-        urlInput.value = link.url;
-        urlInput.dataset.original = link.url;
+        urlInput.value = link.url || '';
+        urlInput.dataset.original = link.url || '';
         urlInput.addEventListener('input', function() {
             handleFieldChange(row);
         });
@@ -478,8 +478,8 @@
         const articleWrittenCheckbox = document.createElement('input');
         articleWrittenCheckbox.type = 'checkbox';
         articleWrittenCheckbox.className = 'form-check-input';
-        articleWrittenCheckbox.checked = link.article_written;
-        articleWrittenCheckbox.dataset.original = link.article_written;
+        articleWrittenCheckbox.checked = link.article_written || false;
+        articleWrittenCheckbox.dataset.original = (link.article_written || false).toString();
         articleWrittenCheckbox.addEventListener('change', function() {
             handleFieldChange(row);
         });
@@ -500,7 +500,7 @@
         const writeArticleBtn = document.createElement('button');
         writeArticleBtn.className = 'btn btn-sm btn-primary write-article-btn';
         writeArticleBtn.textContent = 'Write Article';
-        writeArticleBtn.disabled = link.article_written;
+        writeArticleBtn.disabled = link.article_written || false;
         writeArticleBtn.addEventListener('click', function() {
             writeArticle(row);
         });
@@ -529,21 +529,27 @@
 
     // Function to handle field changes
     function handleFieldChange(row) {
+        if (!row) return;
+        
         const saveBtn = row.querySelector('.save-btn');
+        if (!saveBtn) return;
+        
         const urlInput = row.querySelector('.url-input');
         const dateOfArticleInput = row.querySelector('input[type="date"]:nth-of-type(1)');
         const dateFetchedInput = row.querySelector('input[type="date"]:nth-of-type(2)');
         const focusOfArticleInput = row.querySelector('.focus-input');
         const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
         
-        // Check if any field has changed
-        const urlChanged = urlInput.value !== urlInput.dataset.original;
-        const dateOfArticleChanged = dateOfArticleInput.value !== dateOfArticleInput.dataset.original;
-        const dateFetchedChanged = dateFetchedInput.value !== dateFetchedInput.dataset.original;
-        const focusOfArticleChanged = focusOfArticleInput.value !== focusOfArticleInput.dataset.original;
-        const articleWrittenChanged = articleWrittenCheckbox.checked.toString() !== articleWrittenCheckbox.dataset.original;
+        // Check if any field has changed - with null checks
+        const urlChanged = urlInput && urlInput.value !== urlInput.dataset.original;
+        const dateOfArticleChanged = dateOfArticleInput && dateOfArticleInput.value !== dateOfArticleInput.dataset.original;
+        const dateFetchedChanged = dateFetchedInput && dateFetchedInput.value !== dateFetchedInput.dataset.original;
+        const focusOfArticleChanged = focusOfArticleInput && focusOfArticleInput.value !== focusOfArticleInput.dataset.original;
+        const articleWrittenChanged = articleWrittenCheckbox && 
+                                     articleWrittenCheckbox.checked.toString() !== articleWrittenCheckbox.dataset.original;
         
-        const hasChanges = urlChanged || dateOfArticleChanged || dateFetchedChanged || focusOfArticleChanged || articleWrittenChanged;
+        const hasChanges = urlChanged || dateOfArticleChanged || dateFetchedChanged || 
+                          focusOfArticleChanged || articleWrittenChanged;
         
         // Enable/disable save button based on changes
         saveBtn.disabled = !hasChanges;
@@ -558,6 +564,8 @@
 
     // Function to save link changes
     function saveLink(row) {
+        if (!row) return;
+        
         const linkId = row.dataset.id;
         const urlInput = row.querySelector('.url-input');
         const dateOfArticleInput = row.querySelector('input[type="date"]:nth-of-type(1)');
@@ -567,17 +575,22 @@
         const saveBtn = row.querySelector('.save-btn');
         const writeArticleBtn = row.querySelector('.write-article-btn');
         
+        if (!urlInput || !saveBtn) {
+            showCustomToast('Error: Could not find form elements', 'error');
+            return;
+        }
+        
         // Prepare data for update
         const data = {
             url: urlInput.value,
-            date_of_article: dateOfArticleInput.value || null,
-            date_fetched: dateFetchedInput.value || null,
-            focus_of_article: focusOfArticleInput.value || null,
-            article_written: articleWrittenCheckbox.checked
+            date_of_article: dateOfArticleInput ? (dateOfArticleInput.value || null) : null,
+            date_fetched: dateFetchedInput ? (dateFetchedInput.value || null) : null,
+            focus_of_article: focusOfArticleInput ? (focusOfArticleInput.value || null) : null,
+            article_written: articleWrittenCheckbox ? articleWrittenCheckbox.checked : false
         };
         
         // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         
         // Disable save button during save
         saveBtn.disabled = true;
@@ -588,7 +601,7 @@
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
+                'X-CSRFToken': csrfToken || ''
             },
             body: JSON.stringify(data)
         })
@@ -606,18 +619,18 @@
         })
         .then(updatedLink => {
             // Update original values
-            urlInput.dataset.original = updatedLink.url;
-            dateOfArticleInput.dataset.original = updatedLink.date_of_article || '';
-            dateFetchedInput.dataset.original = updatedLink.date_fetched || '';
-            focusOfArticleInput.dataset.original = updatedLink.focus_of_article || '';
-            articleWrittenCheckbox.dataset.original = updatedLink.article_written;
+            if (urlInput) urlInput.dataset.original = updatedLink.url || '';
+            if (dateOfArticleInput) dateOfArticleInput.dataset.original = updatedLink.date_of_article || '';
+            if (dateFetchedInput) dateFetchedInput.dataset.original = updatedLink.date_fetched || '';
+            if (focusOfArticleInput) focusOfArticleInput.dataset.original = updatedLink.focus_of_article || '';
+            if (articleWrittenCheckbox) articleWrittenCheckbox.dataset.original = (updatedLink.article_written || false).toString();
             
             // Reset UI
             saveBtn.textContent = 'Save';
             row.classList.remove('modified');
             
             // Update Write Article button state
-            writeArticleBtn.disabled = updatedLink.article_written;
+            if (writeArticleBtn) writeArticleBtn.disabled = updatedLink.article_written || false;
             
             // Show success message
             showCustomToast('Changes saved successfully', 'success');
@@ -632,10 +645,17 @@
 
     // Function to write an article
     function writeArticle(row) {
+        if (!row) return;
+        
         const linkId = row.dataset.id;
         const urlInput = row.querySelector('.url-input');
         const focusOfArticleInput = row.querySelector('.focus-input');
         const writeArticleBtn = row.querySelector('.write-article-btn');
+        
+        if (!urlInput || !focusOfArticleInput || !writeArticleBtn) {
+            showCustomToast('Error: Could not find form elements', 'error');
+            return;
+        }
         
         // Check if focus of article is provided
         if (!focusOfArticleInput.value.trim()) {
@@ -645,7 +665,7 @@
         }
         
         // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         
         // Prepare data for article generation
         const data = {
@@ -666,7 +686,7 @@
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
+                'X-CSRFToken': csrfToken || ''
             },
             body: JSON.stringify(data)
         })
@@ -688,8 +708,10 @@
             
             // Update UI
             const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
-            articleWrittenCheckbox.checked = true;
-            articleWrittenCheckbox.dataset.original = 'true';
+            if (articleWrittenCheckbox) {
+                articleWrittenCheckbox.checked = true;
+                articleWrittenCheckbox.dataset.original = 'true';
+            }
             
             writeArticleBtn.disabled = true;
             writeArticleBtn.textContent = 'Write Article';
@@ -698,7 +720,7 @@
             showCustomToast(`Article "${result.post_title}" created successfully!`, 'success');
             
             // Update the focus of article in case it was changed
-            focusOfArticleInput.dataset.original = focusOfArticleInput.value;
+            if (focusOfArticleInput) focusOfArticleInput.dataset.original = focusOfArticleInput.value;
             
             // Remove modified class if it was only the focus that changed
             handleFieldChange(row);
@@ -720,14 +742,19 @@
 
     // Function to delete a link
     function deleteLink(linkId) {
+        if (!linkId) {
+            showCustomToast('Error: No link ID provided', 'error');
+            return;
+        }
+        
         // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         
         fetch(`/admin/news-links/api/links/${linkId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
+                'X-CSRFToken': csrfToken || ''
             }
         })
         .then(response => {
@@ -769,24 +796,29 @@
         const focusOfArticleInput = document.getElementById('newFocusOfArticle');
         const articleWrittenCheckbox = document.getElementById('newArticleWritten');
         
+        if (!urlInput) {
+            showCustomToast('Error: Could not find URL input field', 'error');
+            return;
+        }
+        
         // Prepare data for new link
         const data = {
             url: urlInput.value,
-            date_of_article: dateOfArticleInput.value || null,
-            date_fetched: dateFetchedInput.value || null,
-            focus_of_article: focusOfArticleInput.value || null,
-            article_written: articleWrittenCheckbox.checked
+            date_of_article: dateOfArticleInput ? (dateOfArticleInput.value || null) : null,
+            date_fetched: dateFetchedInput ? (dateFetchedInput.value || null) : null,
+            focus_of_article: focusOfArticleInput ? (focusOfArticleInput.value || null) : null,
+            article_written: articleWrittenCheckbox ? articleWrittenCheckbox.checked : false
         };
         
         // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
         
         // Send create request
         fetch('/admin/news-links/api/links', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken
+                'X-CSRFToken': csrfToken || ''
             },
             body: JSON.stringify(data)
         })
@@ -805,11 +837,14 @@
         .then(newLink => {
             // Add the new link to the table
             const tableBody = document.getElementById('linksTableBody');
-            const row = createLinkRow(newLink);
-            tableBody.insertBefore(row, tableBody.firstChild);
+            if (tableBody) {
+                const row = createLinkRow(newLink);
+                tableBody.insertBefore(row, tableBody.firstChild);
+            }
             
             // Reset the form
-            document.getElementById('newLinkForm').reset();
+            const form = document.getElementById('newLinkForm');
+            if (form) form.reset();
             
             // Show success message
             showCustomToast('New link added successfully', 'success');
@@ -823,6 +858,8 @@
     // Function to show a custom toast message (no Bootstrap dependency)
     function showCustomToast(message, type = 'info') {
         const container = document.getElementById('customToastContainer');
+        if (!container) return;
+        
         const toastId = 'toast-' + Date.now();
         
         const toast = document.createElement('div');
@@ -836,7 +873,8 @@
         closeButton.className = 'custom-toast-close';
         closeButton.innerHTML = '&times;';
         closeButton.onclick = function() {
-            document.getElementById(toastId).remove();
+            const toastElement = document.getElementById(toastId);
+            if (toastElement) toastElement.remove();
         };
         
         toast.appendChild(messageSpan);
@@ -849,7 +887,7 @@
             if (toastElement) {
                 // Wait for fadeOut animation to complete
                 setTimeout(() => {
-                    if (toastElement.parentNode) {
+                    if (toastElement && toastElement.parentNode) {
                         toastElement.parentNode.removeChild(toastElement);
                     }
                 }, 300);
