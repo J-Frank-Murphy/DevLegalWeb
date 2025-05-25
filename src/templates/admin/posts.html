@@ -24,7 +24,12 @@
             <tbody>
                 {% for post in posts.items %}
                 <tr>
-                    <td>{{ post.title }}</td>
+                    <td>
+                        {{ post.title }}
+                        {% if not post.published %}
+                        <span class="unpublished-indicator">(Unpublished)</span>
+                        {% endif %}
+                    </td>
                     <td>{{ post.category.name if post.category else 'Uncategorized' }}</td>
                     <td>{{ post.created_at.strftime('%Y-%m-%d') }}</td>
                     <td>
@@ -52,6 +57,14 @@
         </table>
     </div>
 </div>
+
+<style>
+    .unpublished-indicator {
+        color: #dc3545; /* Bootstrap's danger red color */
+        font-weight: bold;
+        margin-left: 5px;
+    }
+</style>
 
 {% if posts.pages > 1 %}
 <div class="pagination">
