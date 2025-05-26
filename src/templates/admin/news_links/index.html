@@ -7,15 +7,11 @@
 {% block content %}
 <div class="admin-content">
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header">
             <h2>Add New Link</h2>
-            <button id="fetchPerplexityLinks" class="btn btn-primary">
-                <i class="fas fa-robot me-2"></i>Fetch Links from Perplexity AI
-            </button>
         </div>
         <div class="card-body">
             <form id="newLinkForm" class="row g-3">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="col-md-6">
                     <label for="newUrl" class="form-label">URL</label>
                     <input type="text" class="form-control" id="newUrl" required>
@@ -27,10 +23,6 @@
                 <div class="col-md-3">
                     <label for="newDateFetched" class="form-label">Date Fetched</label>
                     <input type="date" class="form-control" id="newDateFetched">
-                </div>
-                <div class="col-md-6">
-                    <label for="newFocusOfArticle" class="form-label">Focus of Article</label>
-                    <input type="text" class="form-control" id="newFocusOfArticle">
                 </div>
                 <div class="col-md-3">
                     <div class="form-check mt-4">
@@ -47,34 +39,60 @@
         </div>
     </div>
 
-    <!-- Perplexity Fetch Status Card - Hidden by default -->
-    <div id="perplexityStatusCard" class="card mt-4" style="display: none;">
-        <div class="card-header bg-info text-white">
-            <h2>Perplexity AI Fetch Status</h2>
+    <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h2>News Links</h2>
+            <div>
+                <!-- Perplexity Topic Selection Radio Buttons -->
+                <div class="perplexity-topic-selection mb-2">
+                    <div class="form-label">Select topic for Perplexity AI:</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="perplexityTopic" id="topicIP" value="intellectual property issues" checked>
+                            <label class="form-check-label" for="topicIP">Intellectual Property</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="perplexityTopic" id="topicOSS" value="open source software licensing and compliance">
+                            <label class="form-check-label" for="topicOSS">Open Source Licensing</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="perplexityTopic" id="topicPrivacy" value="data privacy">
+                            <label class="form-check-label" for="topicPrivacy">Data Privacy</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="perplexityTopic" id="topicPolicy" value="law, policy, and regulation about technology">
+                            <label class="form-check-label" for="topicPolicy">Tech Policy & Regulation</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="radio" name="perplexityTopic" id="topicLawsuits" value="lawsuits or regulatory actions involving technology companies">
+                            <label class="form-check-label" for="topicLawsuits">Tech Lawsuits</label>
+                        </div>
+                    </div>
+                </div>
+                <button id="fetchPerplexityBtn" class="btn btn-info">
+                    <i class="fas fa-robot"></i> Fetch Links from Perplexity AI
+                </button>
+            </div>
         </div>
         <div class="card-body">
-            <div id="perplexityStatus" class="alert alert-info">
-                <div class="d-flex align-items-center">
-                    <div class="spinner-border spinner-border-sm me-2" role="status">
-                        <span class="visually-hidden">Loading...</span>
+            <!-- Perplexity Status Card - Hidden by default -->
+            <div id="perplexityStatusCard" class="card mb-3 d-none">
+                <div class="card-body">
+                    <div id="perplexityLoadingStatus">
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border text-primary me-2" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <span>Loading... Fetching links from Perplexity AI...</span>
+                        </div>
                     </div>
-                    <span>Fetching links from Perplexity AI...</span>
+                    <div id="perplexityResults" class="d-none">
+                        <h5 class="card-title">Results from Perplexity AI</h5>
+                        <p id="perplexityResultsMessage"></p>
+                    </div>
                 </div>
             </div>
-            <div id="perplexityResults" style="display: none;">
-                <h4>Results:</h4>
-                <ul id="perplexityLinksList" class="list-group">
-                    <!-- Results will be populated here -->
-                </ul>
-            </div>
-        </div>
-    </div>
 
-    <div class="card mt-4">
-        <div class="card-header">
-            <h2>News Links</h2>
-        </div>
-        <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-striped table-hover">
                     <thead>
@@ -82,7 +100,6 @@
                             <th>URL</th>
                             <th>Date of Article</th>
                             <th>Date Fetched</th>
-                            <th>Focus of Article</th>
                             <th>Article Written</th>
                             <th>Actions</th>
                         </tr>
@@ -96,45 +113,24 @@
     </div>
 </div>
 
-<!-- Delete Confirmation Modal - Hidden by default -->
-<div class="modal" id="deleteConfirmModal" tabindex="-1" style="display: none;">
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Delete</h5>
-                <button type="button" class="btn-close" onclick="hideDeleteModal()"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 Are you sure you want to delete this link?
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="hideDeleteModal()">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
             </div>
         </div>
     </div>
 </div>
-
-<!-- Write Article Modal - Hidden by default -->
-<div class="modal" id="writeArticleModal" tabindex="-1" style="display: none;">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="writeArticleModalLabel">Writing Article</h5>
-                <button type="button" class="btn-close" onclick="hideWriteArticleModal()"></button>
-            </div>
-            <div class="modal-body">
-                <p>Generating article content using AI. This may take a moment...</p>
-                <div class="progress">
-                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Custom Toast Container - For notifications -->
-<div id="customToastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
 
 <style>
     .url-container {
@@ -147,90 +143,23 @@
     .btn-open-url {
         margin-left: 10px;
     }
-    .save-btn:disabled, .write-article-btn:disabled {
+    .save-btn:disabled {
         cursor: not-allowed;
-        opacity: 0.65;
-    }
-    .save-btn, .write-article-btn {
-        cursor: pointer;
     }
     .modified {
         background-color: #fff3cd;
     }
-    .action-buttons {
-        display: flex;
-        gap: 5px;
-        flex-wrap: wrap;
-    }
-    #perplexityLinksList .list-group-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    #perplexityLinksList .badge {
-        font-size: 0.8rem;
-    }
-    .perplexity-link-url {
-        max-width: 80%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-    /* Modal backdrop */
-    .modal-backdrop {
-        display: none;
-    }
-    /* When modal is shown */
-    .modal.show {
-        display: block;
-        background-color: rgba(0, 0, 0, 0.5);
-    }
-    /* Custom toast styling */
-    .custom-toast {
-        padding: 15px 20px;
-        background-color: #333;
-        color: white;
+    .perplexity-topic-selection {
+        background-color: #f8f9fa;
+        padding: 10px;
         border-radius: 5px;
-        margin-bottom: 10px;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        max-width: 350px;
-        animation: fadeIn 0.3s, fadeOut 0.3s 2.7s;
-        opacity: 0;
-        animation-fill-mode: forwards;
-    }
-    .custom-toast.success {
-        background-color: #28a745;
-    }
-    .custom-toast.error {
-        background-color: #dc3545;
-    }
-    .custom-toast.info {
-        background-color: #17a2b8;
-    }
-    .custom-toast-close {
-        background: transparent;
-        border: none;
-        color: white;
-        font-size: 16px;
-        cursor: pointer;
-        margin-left: 10px;
-    }
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeOut {
-        from { opacity: 1; transform: translateY(0); }
-        to { opacity: 0; transform: translateY(-20px); }
     }
 </style>
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Load all links when the page loads
@@ -242,155 +171,72 @@
             addNewLink();
         });
 
-        // Set up the Perplexity AI fetch button
-        document.getElementById('fetchPerplexityLinks').addEventListener('click', function(e) {
-            e.preventDefault();
-            fetchPerplexityLinks();
+        // Set up the Perplexity fetch button
+        document.getElementById('fetchPerplexityBtn').addEventListener('click', function() {
+            fetchFromPerplexity();
         });
     });
 
-    // Function to show delete confirmation modal
-    function showDeleteConfirmation(linkId) {
-        const modal = document.getElementById('deleteConfirmModal');
-        const confirmBtn = document.getElementById('confirmDeleteBtn');
-        
-        // Set up the confirm button to delete the link
-        confirmBtn.onclick = function() {
-            deleteLink(linkId);
-            hideDeleteModal();
-        };
-        
-        // Show the modal
-        modal.style.display = 'block';
-        modal.classList.add('show');
-    }
-    
-    // Function to hide delete confirmation modal
-    function hideDeleteModal() {
-        const modal = document.getElementById('deleteConfirmModal');
-        modal.style.display = 'none';
-        modal.classList.remove('show');
-    }
-    
-    // Function to show write article modal
-    function showWriteArticleModal() {
-        const modal = document.getElementById('writeArticleModal');
-        modal.style.display = 'block';
-        modal.classList.add('show');
-    }
-    
-    // Function to hide write article modal
-    function hideWriteArticleModal() {
-        const modal = document.getElementById('writeArticleModal');
-        modal.style.display = 'none';
-        modal.classList.remove('show');
-    }
-
     // Function to fetch links from Perplexity AI
-    function fetchPerplexityLinks() {
-        // Show the status card
-        const statusCard = document.getElementById('perplexityStatusCard');
-        const statusAlert = document.getElementById('perplexityStatus');
-        const resultsDiv = document.getElementById('perplexityResults');
-        const linksList = document.getElementById('perplexityLinksList');
+    function fetchFromPerplexity() {
+        // Get the selected topic
+        const selectedTopic = document.querySelector('input[name="perplexityTopic"]:checked').value;
         
-        statusCard.style.display = 'block';
-        statusAlert.className = 'alert alert-info';
-        statusAlert.innerHTML = `
-            <div class="d-flex align-items-center">
-                <div class="spinner-border spinner-border-sm me-2" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <span>Fetching links from Perplexity AI...</span>
-            </div>
-        `;
-        resultsDiv.style.display = 'none';
-        linksList.innerHTML = '';
+        // Show the status card and loading indicator
+        const statusCard = document.getElementById('perplexityStatusCard');
+        const loadingStatus = document.getElementById('perplexityLoadingStatus');
+        const resultsDiv = document.getElementById('perplexityResults');
+        const resultsMessage = document.getElementById('perplexityResultsMessage');
+        
+        statusCard.classList.remove('d-none');
+        loadingStatus.classList.remove('d-none');
+        resultsDiv.classList.add('d-none');
         
         // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content') || '';
         
-        // Send request to backend
+        // Send request to fetch links
         fetch('/admin/news-links/api/fetch-perplexity', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken || ''
-            }
+                'X-CSRFToken': csrfToken
+            },
+            body: JSON.stringify({ topic: selectedTopic })
         })
         .then(response => {
             if (!response.ok) {
-                if (response.headers.get('content-type')?.includes('application/json')) {
-                    return response.json().then(data => {
-                        throw new Error(data.error || 'Failed to fetch links from Perplexity AI');
-                    });
-                } else {
-                    throw new Error('Server returned an error: ' + response.status);
-                }
+                throw new Error('Failed to fetch from Perplexity');
             }
             return response.json();
         })
         .then(data => {
-            // Update status
-            statusAlert.className = 'alert alert-success';
-            statusAlert.innerHTML = `
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-check-circle me-2"></i>
-                    <span>Successfully fetched ${data.links.length} links from Perplexity AI!</span>
-                </div>
-            `;
+            // Hide loading indicator and show results
+            loadingStatus.classList.add('d-none');
+            resultsDiv.classList.remove('d-none');
             
-            // Show results
-            resultsDiv.style.display = 'block';
-            
-            // Populate links list
-            data.links.forEach(link => {
-                const listItem = document.createElement('li');
-                listItem.className = 'list-group-item';
-                
-                const urlSpan = document.createElement('span');
-                urlSpan.className = 'perplexity-link-url';
-                urlSpan.textContent = link.url;
-                
-                const dateBadge = document.createElement('span');
-                dateBadge.className = 'badge bg-secondary';
-                dateBadge.textContent = link.date_of_article;
-                
-                listItem.appendChild(urlSpan);
-                listItem.appendChild(dateBadge);
-                linksList.appendChild(listItem);
-            });
-            
-            // Reload the links table to show the new links
-            loadLinks();
+            if (data.success) {
+                resultsMessage.textContent = `Successfully fetched ${data.count} links about "${selectedTopic}".`;
+                // Reload the links table to show the new links
+                loadLinks();
+            } else {
+                resultsMessage.textContent = `Error: ${data.error || 'Unknown error occurred'}`;
+            }
         })
         .catch(error => {
             console.error('Error fetching from Perplexity:', error);
-            statusAlert.className = 'alert alert-danger';
-            statusAlert.innerHTML = `
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    <span>${error.message || 'An error occurred while fetching links from Perplexity AI'}</span>
-                </div>
-            `;
+            
+            // Hide loading indicator and show error message
+            loadingStatus.classList.add('d-none');
+            resultsDiv.classList.remove('d-none');
+            resultsMessage.textContent = `Error fetching from Perplexity: ${error.message}`;
         });
     }
 
     // Function to load all links
     function loadLinks() {
         fetch('/admin/news-links/api/links')
-            .then(response => {
-                if (!response.ok) {
-                    if (response.headers.get('content-type')?.includes('application/json')) {
-                        return response.json().then(data => {
-                            throw new Error(data.error || 'Failed to load links');
-                        });
-                    } else {
-                        throw new Error('Server returned an error: ' + response.status);
-                    }
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(links => {
                 const tableBody = document.getElementById('linksTableBody');
                 tableBody.innerHTML = '';
@@ -402,7 +248,7 @@
             })
             .catch(error => {
                 console.error('Error loading links:', error);
-                showCustomToast('Failed to load links. Please try again.', 'error');
+                alert('Failed to load links. Please try again.');
             });
     }
 
@@ -419,8 +265,8 @@
         const urlInput = document.createElement('input');
         urlInput.type = 'text';
         urlInput.className = 'form-control url-input';
-        urlInput.value = link.url || '';
-        urlInput.dataset.original = link.url || '';
+        urlInput.value = link.url;
+        urlInput.dataset.original = link.url;
         urlInput.addEventListener('input', function() {
             handleFieldChange(row);
         });
@@ -461,48 +307,27 @@
         });
         dateFetchedCell.appendChild(dateFetchedInput);
         
-        // Focus of Article cell
-        const focusOfArticleCell = document.createElement('td');
-        const focusOfArticleInput = document.createElement('input');
-        focusOfArticleInput.type = 'text';
-        focusOfArticleInput.className = 'form-control focus-input';
-        focusOfArticleInput.value = link.focus_of_article || '';
-        focusOfArticleInput.dataset.original = link.focus_of_article || '';
-        focusOfArticleInput.addEventListener('input', function() {
-            handleFieldChange(row);
-        });
-        focusOfArticleCell.appendChild(focusOfArticleInput);
-        
         // Article Written cell with checkbox
         const articleWrittenCell = document.createElement('td');
         const articleWrittenCheckbox = document.createElement('input');
         articleWrittenCheckbox.type = 'checkbox';
         articleWrittenCheckbox.className = 'form-check-input';
-        articleWrittenCheckbox.checked = link.article_written || false;
-        articleWrittenCheckbox.dataset.original = (link.article_written || false).toString();
+        articleWrittenCheckbox.checked = link.article_written;
+        articleWrittenCheckbox.dataset.original = link.article_written;
         articleWrittenCheckbox.addEventListener('change', function() {
             handleFieldChange(row);
         });
         articleWrittenCell.appendChild(articleWrittenCheckbox);
         
-        // Actions cell with Save, Write Article, and Delete buttons
+        // Actions cell with Save and Delete buttons
         const actionsCell = document.createElement('td');
-        actionsCell.className = 'action-buttons';
         
         const saveBtn = document.createElement('button');
-        saveBtn.className = 'btn btn-sm btn-success save-btn';
+        saveBtn.className = 'btn btn-sm btn-success save-btn me-2';
         saveBtn.textContent = 'Save';
         saveBtn.disabled = true;
         saveBtn.addEventListener('click', function() {
             saveLink(row);
-        });
-        
-        const writeArticleBtn = document.createElement('button');
-        writeArticleBtn.className = 'btn btn-sm btn-primary write-article-btn';
-        writeArticleBtn.textContent = 'Write Article';
-        writeArticleBtn.disabled = link.article_written || false;
-        writeArticleBtn.addEventListener('click', function() {
-            writeArticle(row);
         });
         
         const deleteBtn = document.createElement('button');
@@ -513,14 +338,12 @@
         });
         
         actionsCell.appendChild(saveBtn);
-        actionsCell.appendChild(writeArticleBtn);
         actionsCell.appendChild(deleteBtn);
         
         // Add all cells to the row
         row.appendChild(urlCell);
         row.appendChild(dateOfArticleCell);
         row.appendChild(dateFetchedCell);
-        row.appendChild(focusOfArticleCell);
         row.appendChild(articleWrittenCell);
         row.appendChild(actionsCell);
         
@@ -529,27 +352,19 @@
 
     // Function to handle field changes
     function handleFieldChange(row) {
-        if (!row) return;
-        
         const saveBtn = row.querySelector('.save-btn');
-        if (!saveBtn) return;
-        
         const urlInput = row.querySelector('.url-input');
         const dateOfArticleInput = row.querySelector('input[type="date"]:nth-of-type(1)');
         const dateFetchedInput = row.querySelector('input[type="date"]:nth-of-type(2)');
-        const focusOfArticleInput = row.querySelector('.focus-input');
         const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
         
-        // Check if any field has changed - with null checks
-        const urlChanged = urlInput && urlInput.value !== urlInput.dataset.original;
-        const dateOfArticleChanged = dateOfArticleInput && dateOfArticleInput.value !== dateOfArticleInput.dataset.original;
-        const dateFetchedChanged = dateFetchedInput && dateFetchedInput.value !== dateFetchedInput.dataset.original;
-        const focusOfArticleChanged = focusOfArticleInput && focusOfArticleInput.value !== focusOfArticleInput.dataset.original;
-        const articleWrittenChanged = articleWrittenCheckbox && 
-                                     articleWrittenCheckbox.checked.toString() !== articleWrittenCheckbox.dataset.original;
+        // Check if any field has changed
+        const urlChanged = urlInput.value !== urlInput.dataset.original;
+        const dateOfArticleChanged = dateOfArticleInput.value !== dateOfArticleInput.dataset.original;
+        const dateFetchedChanged = dateFetchedInput.value !== dateFetchedInput.dataset.original;
+        const articleWrittenChanged = articleWrittenCheckbox.checked.toString() !== articleWrittenCheckbox.dataset.original;
         
-        const hasChanges = urlChanged || dateOfArticleChanged || dateFetchedChanged || 
-                          focusOfArticleChanged || articleWrittenChanged;
+        const hasChanges = urlChanged || dateOfArticleChanged || dateFetchedChanged || articleWrittenChanged;
         
         // Enable/disable save button based on changes
         saveBtn.disabled = !hasChanges;
@@ -564,33 +379,23 @@
 
     // Function to save link changes
     function saveLink(row) {
-        if (!row) return;
-        
         const linkId = row.dataset.id;
         const urlInput = row.querySelector('.url-input');
         const dateOfArticleInput = row.querySelector('input[type="date"]:nth-of-type(1)');
         const dateFetchedInput = row.querySelector('input[type="date"]:nth-of-type(2)');
-        const focusOfArticleInput = row.querySelector('.focus-input');
         const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
         const saveBtn = row.querySelector('.save-btn');
-        const writeArticleBtn = row.querySelector('.write-article-btn');
-        
-        if (!urlInput || !saveBtn) {
-            showCustomToast('Error: Could not find form elements', 'error');
-            return;
-        }
         
         // Prepare data for update
         const data = {
             url: urlInput.value,
-            date_of_article: dateOfArticleInput ? (dateOfArticleInput.value || null) : null,
-            date_fetched: dateFetchedInput ? (dateFetchedInput.value || null) : null,
-            focus_of_article: focusOfArticleInput ? (focusOfArticleInput.value || null) : null,
-            article_written: articleWrittenCheckbox ? articleWrittenCheckbox.checked : false
+            date_of_article: dateOfArticleInput.value || null,
+            date_fetched: dateFetchedInput.value || null,
+            article_written: articleWrittenCheckbox.checked
         };
         
         // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         
         // Disable save button during save
         saveBtn.disabled = true;
@@ -601,174 +406,66 @@
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken || ''
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify(data)
         })
         .then(response => {
             if (!response.ok) {
-                if (response.headers.get('content-type')?.includes('application/json')) {
-                    return response.json().then(data => {
-                        throw new Error(data.error || 'Failed to save changes');
-                    });
-                } else {
-                    throw new Error('Server returned an error: ' + response.status);
-                }
+                throw new Error('Failed to save changes');
             }
             return response.json();
         })
         .then(updatedLink => {
             // Update original values
-            if (urlInput) urlInput.dataset.original = updatedLink.url || '';
-            if (dateOfArticleInput) dateOfArticleInput.dataset.original = updatedLink.date_of_article || '';
-            if (dateFetchedInput) dateFetchedInput.dataset.original = updatedLink.date_fetched || '';
-            if (focusOfArticleInput) focusOfArticleInput.dataset.original = updatedLink.focus_of_article || '';
-            if (articleWrittenCheckbox) articleWrittenCheckbox.dataset.original = (updatedLink.article_written || false).toString();
+            urlInput.dataset.original = updatedLink.url;
+            dateOfArticleInput.dataset.original = updatedLink.date_of_article || '';
+            dateFetchedInput.dataset.original = updatedLink.date_fetched || '';
+            articleWrittenCheckbox.dataset.original = updatedLink.article_written;
             
             // Reset UI
             saveBtn.textContent = 'Save';
             row.classList.remove('modified');
             
-            // Update Write Article button state
-            if (writeArticleBtn) writeArticleBtn.disabled = updatedLink.article_written || false;
-            
             // Show success message
-            showCustomToast('Changes saved successfully', 'success');
+            showToast('Changes saved successfully');
         })
         .catch(error => {
             console.error('Error saving link:', error);
-            showCustomToast('Failed to save changes: ' + error.message, 'error');
+            alert('Failed to save changes. Please try again.');
             saveBtn.textContent = 'Save';
             saveBtn.disabled = false;
         });
     }
 
-    // Function to write an article
-    function writeArticle(row) {
-        if (!row) return;
+    // Function to show delete confirmation modal
+    function showDeleteConfirmation(linkId) {
+        const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+        const confirmBtn = document.getElementById('confirmDeleteBtn');
         
-        const linkId = row.dataset.id;
-        const urlInput = row.querySelector('.url-input');
-        const focusOfArticleInput = row.querySelector('.focus-input');
-        const writeArticleBtn = row.querySelector('.write-article-btn');
-        
-        if (!urlInput || !focusOfArticleInput || !writeArticleBtn) {
-            showCustomToast('Error: Could not find form elements', 'error');
-            return;
-        }
-        
-        // Check if focus of article is provided
-        if (!focusOfArticleInput.value.trim()) {
-            showCustomToast('Please provide a focus for the article before generating content.', 'error');
-            focusOfArticleInput.focus();
-            return;
-        }
-        
-        // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        
-        // Prepare data for article generation
-        const data = {
-            link_id: linkId,
-            url: urlInput.value,
-            focus_of_article: focusOfArticleInput.value
+        // Set up the confirm button to delete the link
+        confirmBtn.onclick = function() {
+            deleteLink(linkId);
+            modal.hide();
         };
         
-        // Disable button and show modal
-        writeArticleBtn.disabled = true;
-        writeArticleBtn.textContent = 'Writing...';
-        
-        // Show the writing modal
-        showWriteArticleModal();
-        
-        // Send request to generate article
-        fetch('/admin/news-links/api/generate-article', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken || ''
-            },
-            body: JSON.stringify(data)
-        })
-        .then(response => {
-            if (!response.ok) {
-                if (response.headers.get('content-type')?.includes('application/json')) {
-                    return response.json().then(data => {
-                        throw new Error(data.error || 'Failed to generate article');
-                    });
-                } else {
-                    throw new Error('Server returned an error: ' + response.status);
-                }
-            }
-            return response.json();
-        })
-        .then(result => {
-            // Hide the modal
-            hideWriteArticleModal();
-            
-            // Update UI
-            const articleWrittenCheckbox = row.querySelector('input[type="checkbox"]');
-            if (articleWrittenCheckbox) {
-                articleWrittenCheckbox.checked = true;
-                articleWrittenCheckbox.dataset.original = 'true';
-            }
-            
-            writeArticleBtn.disabled = true;
-            writeArticleBtn.textContent = 'Write Article';
-            
-            // Show success message
-            showCustomToast(`Article "${result.post_title}" created successfully!`, 'success');
-            
-            // Update the focus of article in case it was changed
-            if (focusOfArticleInput) focusOfArticleInput.dataset.original = focusOfArticleInput.value;
-            
-            // Remove modified class if it was only the focus that changed
-            handleFieldChange(row);
-        })
-        .catch(error => {
-            console.error('Error generating article:', error);
-            
-            // Hide the modal
-            hideWriteArticleModal();
-            
-            // Reset button
-            writeArticleBtn.disabled = false;
-            writeArticleBtn.textContent = 'Write Article';
-            
-            // Show error message
-            showCustomToast('Failed to generate article: ' + error.message, 'error');
-        });
+        modal.show();
     }
 
     // Function to delete a link
     function deleteLink(linkId) {
-        if (!linkId) {
-            showCustomToast('Error: No link ID provided', 'error');
-            return;
-        }
-        
         // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         
         fetch(`/admin/news-links/api/links/${linkId}`, {
             method: 'DELETE',
             headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken || ''
+                'X-CSRFToken': csrfToken
             }
         })
         .then(response => {
             if (!response.ok) {
-                if (response.headers.get('content-type')?.includes('application/json')) {
-                    return response.json().then(data => {
-                        throw new Error(data.error || 'Failed to delete link');
-                    });
-                } else {
-                    return response.text().then(text => {
-                        console.error('Non-JSON response:', text);
-                        throw new Error('Server returned a non-JSON response');
-                    });
-                }
+                throw new Error('Failed to delete link');
             }
             return response.json();
         })
@@ -780,11 +477,11 @@
             }
             
             // Show success message
-            showCustomToast('Link deleted successfully', 'success');
+            showToast('Link deleted successfully');
         })
         .catch(error => {
             console.error('Error deleting link:', error);
-            showCustomToast('Failed to delete link: ' + error.message, 'error');
+            alert('Failed to delete link. Please try again.');
         });
     }
 
@@ -793,106 +490,87 @@
         const urlInput = document.getElementById('newUrl');
         const dateOfArticleInput = document.getElementById('newDateOfArticle');
         const dateFetchedInput = document.getElementById('newDateFetched');
-        const focusOfArticleInput = document.getElementById('newFocusOfArticle');
         const articleWrittenCheckbox = document.getElementById('newArticleWritten');
-        
-        if (!urlInput) {
-            showCustomToast('Error: Could not find URL input field', 'error');
-            return;
-        }
         
         // Prepare data for new link
         const data = {
             url: urlInput.value,
-            date_of_article: dateOfArticleInput ? (dateOfArticleInput.value || null) : null,
-            date_fetched: dateFetchedInput ? (dateFetchedInput.value || null) : null,
-            focus_of_article: focusOfArticleInput ? (focusOfArticleInput.value || null) : null,
-            article_written: articleWrittenCheckbox ? articleWrittenCheckbox.checked : false
+            date_of_article: dateOfArticleInput.value || null,
+            date_fetched: dateFetchedInput.value || null,
+            article_written: articleWrittenCheckbox.checked
         };
         
         // Get CSRF token
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         
         // Send create request
         fetch('/admin/news-links/api/links', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken || ''
+                'X-CSRFToken': csrfToken
             },
             body: JSON.stringify(data)
         })
         .then(response => {
             if (!response.ok) {
-                if (response.headers.get('content-type')?.includes('application/json')) {
-                    return response.json().then(data => {
-                        throw new Error(data.error || 'Failed to add new link');
-                    });
-                } else {
-                    throw new Error('Server returned an error: ' + response.status);
-                }
+                throw new Error('Failed to add new link');
             }
             return response.json();
         })
         .then(newLink => {
             // Add the new link to the table
             const tableBody = document.getElementById('linksTableBody');
-            if (tableBody) {
-                const row = createLinkRow(newLink);
-                tableBody.insertBefore(row, tableBody.firstChild);
-            }
+            const row = createLinkRow(newLink);
+            tableBody.insertBefore(row, tableBody.firstChild);
             
             // Reset the form
-            const form = document.getElementById('newLinkForm');
-            if (form) form.reset();
+            document.getElementById('newLinkForm').reset();
             
             // Show success message
-            showCustomToast('New link added successfully', 'success');
+            showToast('New link added successfully');
         })
         .catch(error => {
             console.error('Error adding link:', error);
-            showCustomToast('Failed to add new link: ' + error.message, 'error');
+            alert('Failed to add new link. Please try again.');
         });
     }
 
-    // Function to show a custom toast message (no Bootstrap dependency)
-    function showCustomToast(message, type = 'info') {
-        const container = document.getElementById('customToastContainer');
-        if (!container) return;
+    // Helper function to show toast messages
+    function showToast(message) {
+        // Create toast container if it doesn't exist
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            document.body.appendChild(toastContainer);
+        }
         
+        // Create toast element
         const toastId = 'toast-' + Date.now();
+        const toastHtml = `
+            <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="toast-header">
+                    <strong class="me-auto">Notification</strong>
+                    <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+                <div class="toast-body">
+                    ${message}
+                </div>
+            </div>
+        `;
         
-        const toast = document.createElement('div');
-        toast.id = toastId;
-        toast.className = `custom-toast ${type}`;
+        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
         
-        const messageSpan = document.createElement('span');
-        messageSpan.textContent = message;
+        // Initialize and show the toast
+        const toastElement = document.getElementById(toastId);
+        const toast = new bootstrap.Toast(toastElement, { autohide: true, delay: 3000 });
+        toast.show();
         
-        const closeButton = document.createElement('button');
-        closeButton.className = 'custom-toast-close';
-        closeButton.innerHTML = '&times;';
-        closeButton.onclick = function() {
-            const toastElement = document.getElementById(toastId);
-            if (toastElement) toastElement.remove();
-        };
-        
-        toast.appendChild(messageSpan);
-        toast.appendChild(closeButton);
-        container.appendChild(toast);
-        
-        // Auto-remove after 3 seconds
-        setTimeout(() => {
-            const toastElement = document.getElementById(toastId);
-            if (toastElement) {
-                // Wait for fadeOut animation to complete
-                setTimeout(() => {
-                    if (toastElement && toastElement.parentNode) {
-                        toastElement.parentNode.removeChild(toastElement);
-                    }
-                }, 300);
-            }
-        }, 3000);
+        // Remove toast after it's hidden
+        toastElement.addEventListener('hidden.bs.toast', function() {
+            toastElement.remove();
+        });
     }
 </script>
 {% endblock %}
