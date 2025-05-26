@@ -281,7 +281,7 @@ def fetch_perplexity_links():
         yesterday = (datetime.now() - timedelta(days=1)).strftime('%B %d, %Y')
         
         # Construct the prompt for Perplexity AI
-        prompt = f"""Give me five links to articles from the past week about legal issues that affect the tech industry. Focus on articles about intellectual property issues, open source software licensing and compliance, data privacy, and lawsuits or regulatory actions involving technology companies. Be sure to search tech blogs and business news sites. For each article, give me the URL and the date of the article in MM-DD-YYYY format. Don't give me any text or commentary other than the URLs and the dates.Return the data as an array of JSON objects in the following format:
+        prompt = f"""Give me five links to articles from the past week about legal issues involving the tech industry. Focus on articles about intellectual property issues, open source software licensing and compliance, data privacy, and lawsuits or regulatory actions involving technology companies. Be sure to search tech blogs and business news sites. For each article, give me the URL and the date of the article in MM-DD-YYYY format. Don't give me any text or commentary other than the URLs and the dates.Return the data as an array of JSON objects in the following format:
 
 {{
 "url": string
