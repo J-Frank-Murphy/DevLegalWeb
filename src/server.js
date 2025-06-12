@@ -88,20 +88,22 @@ app.engine('html', async (filePath, options, callback) => {
     if (options) {
       for (const [key, value] of Object.entries(options)) {
         const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
-        // Ensure value is a primitive type before using in replace
+        
+        // Convert any value to a safe string representation
         let replacementValue = '';
-        if (value !== null && value !== undefined) {
-          if (typeof value === 'object') {
-            replacementValue = '';
-          } else {
-            try {
-              replacementValue = String(value);
-            } catch (error) {
-              replacementValue = '';
-            }
-          }
+        
+        if (value === null || value === undefined) {
+          replacementValue = '';
+        } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          replacementValue = String(value);
+        } else if (Array.isArray(value)) {
+          replacementValue = ''; // Don't render arrays in templates
+        } else if (typeof value === 'object') {
+          replacementValue = ''; // Don't render objects in templates
+        } else {
+          replacementValue = String(value);
         }
-        replacementValue = String(replacementValue);
+        
         html = html.replace(regex, replacementValue);
       }
     }
