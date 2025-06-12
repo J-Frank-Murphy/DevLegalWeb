@@ -101,6 +101,7 @@ app.engine('html', async (filePath, options, callback) => {
             }
           }
         }
+        replacementValue = String(replacementValue);
         html = html.replace(regex, replacementValue);
       }
     }
