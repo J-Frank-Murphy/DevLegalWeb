@@ -23,11 +23,30 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.VITE_SUPABASE_URL || 'your-supabase-url',
-  process.env.VITE_SUPABASE_ANON_KEY || 'your-supabase-anon-key'
-);
+// Validate Supabase configuration
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+let supabase = null;
+let supabaseConfigured = false;
+
+if (supabaseUrl && supabaseAnonKey && 
+    supabaseUrl !== 'https://placeholder.supabase.co' && 
+    supabaseAnonKey !== 'placeholder-anon-key' &&
+    supabaseUrl.startsWith('https://') && 
+    supabaseUrl.includes('.supabase.co')) {
+  try {
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    supabaseConfigured = true;
+    console.log('Supabase client initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize Supabase client:', error);
+    supabaseConfigured = false;
+  }
+} else {
+  console.warn('Supabase not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+  console.warn('The application will run in demo mode without database functionality.');
+}
 
 // Middleware
 app.use(helmet({
@@ -126,26 +145,41 @@ function requireAdmin(req, res, next) {
   }
 }
 
+// Database operation wrapper
+async function executeSupabaseQuery(operation) {
+  if (!supabaseConfigured) {
+    return { data: [], error: { message: 'Database not configured' } };
+  }
+  try {
+    return await operation();
+  } catch (error) {
+    console.error('Database operation failed:', error);
+    return { data: null, error: error };
+  }
+}
+
 // Routes
 
 // Home page
 app.get('/', async (req, res) => {
   try {
     // Get latest published posts
-    const { data: posts, error } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        categories (name, slug),
-        post_tags (
-          tags (name, slug)
-        )
-      `)
-      .eq('published', true)
-      .order('created_at', { ascending: false })
-      .limit(3);
+    const { data: posts, error } = await executeSupabaseQuery(async () => {
+      return await supabase
+        .from('posts')
+        .select(`
+          *,
+          categories (name, slug),
+          post_tags (
+            tags (name, slug)
+          )
+        `)
+        .eq('published', true)
+        .order('created_at', { ascending: false })
+        .limit(3);
+    });
 
-    if (error) {
+    if (error && supabaseConfigured) {
       console.error('Error fetching posts:', error);
     }
 
@@ -168,20 +202,22 @@ app.get('/blog', async (req, res) => {
     const limit = 10;
     const offset = (page - 1) * limit;
 
-    const { data: posts, error } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        categories (name, slug),
-        post_tags (
-          tags (name, slug)
-        )
-      `)
-      .eq('published', true)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    const { data: posts, error } = await executeSupabaseQuery(async () => {
+      return await supabase
+        .from('posts')
+        .select(`
+          *,
+          categories (name, slug),
+          post_tags (
+            tags (name, slug)
+          )
+        `)
+        .eq('published', true)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+    });
 
-    if (error) {
+    if (error && supabaseConfigured) {
       console.error('Error fetching posts:', error);
     }
 
@@ -200,36 +236,42 @@ app.get('/blog', async (req, res) => {
 
 app.get('/blog/post/:slug', async (req, res) => {
   try {
-    const { data: post, error } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        categories (name, slug),
-        post_tags (
-          tags (name, slug)
-        )
-      `)
-      .eq('slug', req.params.slug)
-      .eq('published', true)
-      .single();
+    const { data: post, error } = await executeSupabaseQuery(async () => {
+      return await supabase
+        .from('posts')
+        .select(`
+          *,
+          categories (name, slug),
+          post_tags (
+            tags (name, slug)
+          )
+        `)
+        .eq('slug', req.params.slug)
+        .eq('published', true)
+        .single();
+    });
 
     if (error || !post) {
       return res.status(404).send('Post not found');
     }
 
     // Increment view count
-    await supabase
-      .from('posts')
-      .update({ views: (post.views || 0) + 1 })
-      .eq('id', post.id);
+    if (supabaseConfigured) {
+      await supabase
+        .from('posts')
+        .update({ views: (post.views || 0) + 1 })
+        .eq('id', post.id);
+    }
 
     // Get comments
-    const { data: comments } = await supabase
-      .from('comments')
-      .select('*')
-      .eq('post_id', post.id)
-      .eq('approved', true)
-      .order('created_at', { ascending: true });
+    const { data: comments } = await executeSupabaseQuery(async () => {
+      return await supabase
+        .from('comments')
+        .select('*')
+        .eq('post_id', post.id)
+        .eq('approved', true)
+        .order('created_at', { ascending: true });
+    });
 
     const template = await renderTemplate('blog/post.html', {
       title: `${post.title} - DevLegal`,
@@ -261,11 +303,13 @@ app.post('/admin/login', async (req, res) => {
   try {
     const { username, password } = req.body;
     
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('username', username)
-      .single();
+    const { data: user, error } = await executeSupabaseQuery(async () => {
+      return await supabase
+        .from('users')
+        .select('*')
+        .eq('username', username)
+        .single();
+    });
 
     if (error || !user) {
       return res.redirect('/admin/login?error=invalid');
@@ -298,13 +342,17 @@ app.get('/admin/logout', (req, res) => {
 app.get('/admin', requireAuth, async (req, res) => {
   try {
     // Get dashboard stats
-    const { data: postsCount } = await supabase
-      .from('posts')
-      .select('id', { count: 'exact' });
+    const { data: postsCount } = await executeSupabaseQuery(async () => {
+      return await supabase
+        .from('posts')
+        .select('id', { count: 'exact' });
+    });
     
-    const { data: commentsCount } = await supabase
-      .from('comments')
-      .select('id', { count: 'exact' });
+    const { data: commentsCount } = await executeSupabaseQuery(async () => {
+      return await supabase
+        .from('comments')
+        .select('id', { count: 'exact' });
+    });
 
     const template = await renderTemplate('admin/index.html', {
       title: 'Admin Dashboard - DevLegal',
@@ -323,15 +371,17 @@ app.get('/admin', requireAuth, async (req, res) => {
 // Admin posts management
 app.get('/admin/posts', requireAuth, async (req, res) => {
   try {
-    const { data: posts, error } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        categories (name, slug)
-      `)
-      .order('created_at', { ascending: false });
+    const { data: posts, error } = await executeSupabaseQuery(async () => {
+      return await supabase
+        .from('posts')
+        .select(`
+          *,
+          categories (name, slug)
+        `)
+        .order('created_at', { ascending: false });
+    });
 
-    if (error) {
+    if (error && supabaseConfigured) {
       console.error('Error fetching posts:', error);
     }
 
@@ -351,17 +401,19 @@ app.get('/admin/posts', requireAuth, async (req, res) => {
 // API routes for AJAX operations
 app.get('/api/posts', async (req, res) => {
   try {
-    const { data: posts, error } = await supabase
-      .from('posts')
-      .select(`
-        *,
-        categories (name, slug),
-        post_tags (
-          tags (name, slug)
-        )
-      `)
-      .eq('published', true)
-      .order('created_at', { ascending: false });
+    const { data: posts, error } = await executeSupabaseQuery(async () => {
+      return await supabase
+        .from('posts')
+        .select(`
+          *,
+          categories (name, slug),
+          post_tags (
+            tags (name, slug)
+          )
+        `)
+        .eq('published', true)
+        .order('created_at', { ascending: false });
+    });
 
     if (error) {
       return res.status(500).json({ error: error.message });
@@ -376,10 +428,12 @@ app.get('/api/posts', async (req, res) => {
 
 app.get('/api/categories', async (req, res) => {
   try {
-    const { data: categories, error } = await supabase
-      .from('categories')
-      .select('*')
-      .order('name');
+    const { data: categories, error } = await executeSupabaseQuery(async () => {
+      return await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+    });
 
     if (error) {
       return res.status(500).json({ error: error.message });
@@ -394,10 +448,12 @@ app.get('/api/categories', async (req, res) => {
 
 app.get('/api/tags', async (req, res) => {
   try {
-    const { data: tags, error } = await supabase
-      .from('tags')
-      .select('*')
-      .order('name');
+    const { data: tags, error } = await executeSupabaseQuery(async () => {
+      return await supabase
+        .from('tags')
+        .select('*')
+        .order('name');
+    });
 
     if (error) {
       return res.status(500).json({ error: error.message });
@@ -445,4 +501,11 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Visit: http://localhost:${PORT}`);
+  if (!supabaseConfigured) {
+    console.log('\n⚠️  NOTICE: Supabase is not configured.');
+    console.log('To enable database functionality, please:');
+    console.log('1. Create a Supabase project at https://supabase.com');
+    console.log('2. Update your .env file with your Supabase URL and anon key');
+    console.log('3. Restart the server');
+  }
 });
