@@ -82,7 +82,7 @@ app.set('views', path.join(__dirname, 'templates'));
 app.engine('html', async (filePath, options, callback) => {
   try {
     const fs = await import('fs');
-    let html = fs.readFileSync(filePath, 'utf8');
+    let html = String(fs.readFileSync(filePath, 'utf8'));
     
     // Simple template variable replacement
     if (options) {
