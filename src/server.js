@@ -8,6 +8,7 @@ import compression from 'compression';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import fs from 'fs';
 
 // Import routes
 import { createBlogRoutes } from './routes/blog.js';
@@ -78,15 +79,19 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.set('view engine', 'html');
 app.set('views', path.join(__dirname, 'templates'));
 
-// Custom template rendering middleware
-app.engine('html', async (filePath, options, callback) => {
+// Custom template rendering middleware - SYNCHRONOUS
+app.engine('html', (filePath, options, callback) => {
   try {
-    const fs = await import('fs');
-    let html = String(fs.readFileSync(filePath, 'utf8'));
+    let html = fs.readFileSync(filePath, 'utf8');
     
     // Simple template variable replacement
-    if (options) {
+    if (options && typeof options === 'object') {
       for (const [key, value] of Object.entries(options)) {
+        // Skip non-string keys or Express internal properties
+        if (typeof key !== 'string' || key.startsWith('_') || key === 'settings' || key === 'cache') {
+          continue;
+        }
+        
         const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
         
         // Convert any value to a safe string representation
@@ -96,12 +101,9 @@ app.engine('html', async (filePath, options, callback) => {
           replacementValue = '';
         } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
           replacementValue = String(value);
-        } else if (Array.isArray(value)) {
-          replacementValue = ''; // Don't render arrays in templates
-        } else if (typeof value === 'object') {
-          replacementValue = ''; // Don't render objects in templates
         } else {
-          replacementValue = String(value);
+          // For objects and arrays, don't render them in templates
+          replacementValue = '';
         }
         
         html = html.replace(regex, replacementValue);
