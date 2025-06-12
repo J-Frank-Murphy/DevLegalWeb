@@ -10,18 +10,6 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import fs from 'fs';
 
-// Import routes
-import { createBlogRoutes } from './routes/blog.js';
-import { createAdminRoutes } from './routes/admin.js';
-import { createApiRoutes } from './routes/api.js';
-import { createMainRoutes } from './routes/main.js';
-import { createNewsLinksRoutes } from './routes/news-links.js';
-import { createDocumentsRoutes } from './routes/documents.js';
-
-// Import middleware
-import { authMiddleware } from './middleware/auth.js';
-import { supabaseClient } from './config/supabase.js';
-
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -79,57 +67,102 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.set('view engine', 'html');
 app.set('views', path.join(__dirname, 'templates'));
 
-// Custom template rendering middleware - SYNCHRONOUS
-app.engine('html', (filePath, options, callback) => {
+// Simple template rendering function
+function renderTemplate(templatePath, data = {}) {
   try {
-    let html = fs.readFileSync(filePath, 'utf8');
+    let html = fs.readFileSync(templatePath, 'utf8');
     
     // Simple template variable replacement
-    if (options && typeof options === 'object') {
-      for (const [key, value] of Object.entries(options)) {
-        // Skip non-string keys or Express internal properties
-        if (typeof key !== 'string' || key.startsWith('_') || key === 'settings' || key === 'cache') {
+    if (data && typeof data === 'object') {
+      for (const [key, value] of Object.entries(data)) {
+        // Skip Express internal properties and non-string keys
+        if (typeof key !== 'string' || 
+            key.startsWith('_') || 
+            key === 'settings' || 
+            key === 'cache' ||
+            key === 'locals') {
           continue;
         }
         
         const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
         
-        // Convert any value to a safe string representation
+        // Convert value to safe string
         let replacementValue = '';
-        
         if (value === null || value === undefined) {
           replacementValue = '';
         } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
           replacementValue = String(value);
-        } else {
-          // For objects and arrays, don't render them in templates
+        } else if (Array.isArray(value)) {
+          // For arrays, don't render in templates
           replacementValue = '';
+        } else if (typeof value === 'object') {
+          // For objects, don't render in templates
+          replacementValue = '';
+        } else {
+          replacementValue = String(value);
         }
         
         html = html.replace(regex, replacementValue);
       }
     }
     
+    return html;
+  } catch (err) {
+    throw err;
+  }
+}
+
+// Custom template engine
+app.engine('html', (filePath, options, callback) => {
+  try {
+    const html = renderTemplate(filePath, options);
     callback(null, html);
   } catch (err) {
     callback(err);
   }
 });
 
-// Auth middleware
-app.use(authMiddleware);
+// Basic routes
+app.get('/', (req, res) => {
+  res.render('index.html', {
+    title: 'DevLegal - Technology Law Experts'
+  });
+});
 
-// Routes
-app.use('/', createMainRoutes());
-app.use('/blog', createBlogRoutes());
-app.use('/admin', createAdminRoutes());
-app.use('/api', createApiRoutes());
-app.use('/news-links', createNewsLinksRoutes());
-app.use('/documents', createDocumentsRoutes());
+app.get('/blog', (req, res) => {
+  res.render('blog/index.html', {
+    title: 'Blog - DevLegal'
+  });
+});
+
+app.get('/admin/login', (req, res) => {
+  res.render('admin/login.html', {
+    title: 'Admin Login - DevLegal'
+  });
+});
+
+app.get('/admin', (req, res) => {
+  res.render('admin/index.html', {
+    title: 'Admin Dashboard - DevLegal'
+  });
+});
+
+// API routes
+app.get('/api/posts', (req, res) => {
+  res.json([]);
+});
+
+app.get('/api/categories', (req, res) => {
+  res.json([]);
+});
+
+app.get('/api/tags', (req, res) => {
+  res.json([]);
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Server error:', err);
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
@@ -140,7 +173,8 @@ app.use((req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Node.js server running on port ${PORT}`);
+  console.log(`📱 Visit: http://localhost:${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
