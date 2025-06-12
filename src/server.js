@@ -88,7 +88,16 @@ app.engine('html', async (filePath, options, callback) => {
     if (options) {
       for (const [key, value] of Object.entries(options)) {
         const regex = new RegExp(`{{\\s*${key}\\s*}}`, 'g');
-        html = html.replace(regex, value || '');
+        // Ensure value is a primitive type before using in replace
+        let replacementValue = '';
+        if (value !== null && value !== undefined) {
+          if (typeof value === 'object') {
+            replacementValue = '';
+          } else {
+            replacementValue = String(value);
+          }
+        }
+        html = html.replace(regex, replacementValue);
       }
     }
     
