@@ -30,6 +30,7 @@ const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
 let supabase = null;
 let supabaseConfigured = false;
 
+console.log('🔧 Starting Dev Legal Website...');
 console.log('Supabase URL:', supabaseUrl ? 'Set' : 'Not set');
 console.log('Supabase Key:', supabaseAnonKey ? 'Set' : 'Not set');
 
@@ -48,16 +49,29 @@ if (supabaseUrl && supabaseAnonKey) {
   }
 } else {
   console.warn('⚠️  Supabase environment variables not found');
-  console.warn('Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file');
+  console.warn('Running in demo mode without database functionality');
   supabaseConfigured = false;
 }
 
 // Middleware
 app.use(helmet({
-  contentSecurityPolicy: false // Disable CSP for development
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdnjs.cloudflare.com", "https://assets.mlcdn.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdnjs.cloudflare.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com", "https://assets.mailerlite.com", "https://groot.mailerlite.com"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: ["'self'", "https://assets.mailerlite.com"],
+      frameSrc: ["'self'", "https://assets.mailerlite.com"]
+    }
+  }
 }));
 app.use(compression());
-app.use(cors());
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -169,6 +183,8 @@ async function executeSupabaseQuery(operation) {
 // Home page
 app.get('/', async (req, res) => {
   try {
+    console.log('📄 Serving homepage');
+    
     // Get latest published posts
     const { data: posts, error } = await executeSupabaseQuery(async () => {
       return await supabase
@@ -189,10 +205,49 @@ app.get('/', async (req, res) => {
       console.error('Error fetching posts:', error);
     }
 
-    const template = await renderTemplate('index.html', {
-      title: 'DevLegal - Technology Law Specialists',
-      posts: posts || []
-    });
+    // Read the base template and render with data
+    const templatePath = path.join(__dirname, 'templates', 'base.html');
+    let template = fs.readFileSync(templatePath, 'utf8');
+    
+    // Include hero section
+    const heroPath = path.join(__dirname, 'templates', 'includes', 'hero.html');
+    const heroTemplate = fs.readFileSync(heroPath, 'utf8');
+    
+    // Include latest posts section if we have posts
+    let latestPostsHtml = '';
+    if (posts && posts.length > 0) {
+      const latestPostsPath = path.join(__dirname, 'templates', 'includes', 'latest_posts.html');
+      let latestPostsTemplate = fs.readFileSync(latestPostsPath, 'utf8');
+      
+      // Simple template rendering for posts
+      const postsHtml = posts.map(post => `
+        <div class="blog-post">
+          <div class="blog-post-thumbnail">
+            <img src="/static/${post.featured_image || 'images/default-post.jpg'}" alt="${post.title}">
+          </div>
+          <div class="blog-post-content">
+            <div class="blog-post-meta">
+              <span class="blog-post-date">${new Date(post.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+              <span class="blog-post-category">${post.categories?.name || 'Uncategorized'}</span>
+            </div>
+            <h3 class="blog-post-title">${post.title}</h3>
+            <p class="blog-post-excerpt">${post.excerpt || ''}</p>
+            <a href="/blog/post/${post.slug}" class="read-more">Read More</a>
+          </div>
+        </div>
+      `).join('');
+      
+      latestPostsTemplate = latestPostsTemplate.replace(/{% for post in latest_posts %}[\s\S]*?{% endfor %}/g, postsHtml);
+      latestPostsHtml = latestPostsTemplate;
+    }
+    
+    // Replace content block
+    template = template.replace(/{% block content %}[\s\S]*?{% endblock %}/, heroTemplate + latestPostsHtml);
+    
+    // Replace other template variables
+    template = template.replace(/{{ url_for\('static', filename='([^']+)'\) }}/g, '/static/$1');
+    template = template.replace(/{{ url_for\('([^']+)'\) }}/g, '/$1');
+    template = template.replace(/{{ now.year }}/g, new Date().getFullYear());
     
     res.send(template);
   } catch (error) {
@@ -204,33 +259,9 @@ app.get('/', async (req, res) => {
 // Blog routes
 app.get('/blog', async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = 10;
-    const offset = (page - 1) * limit;
-
-    const { data: posts, error } = await executeSupabaseQuery(async () => {
-      return await supabase
-        .from('posts')
-        .select(`
-          *,
-          categories (name, slug),
-          post_tags (
-            tags (name, slug)
-          )
-        `)
-        .eq('published', true)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
-    });
-
-    if (error && supabaseConfigured) {
-      console.error('Error fetching posts:', error);
-    }
-
+    console.log('📄 Serving blog index');
     const template = await renderTemplate('blog/index.html', {
-      title: 'Blog - DevLegal',
-      posts: posts || [],
-      currentPage: page
+      title: 'Blog - DevLegal'
     });
     
     res.send(template);
@@ -242,6 +273,8 @@ app.get('/blog', async (req, res) => {
 
 app.get('/blog/post/:slug', async (req, res) => {
   try {
+    console.log(`📄 Serving blog post: ${req.params.slug}`);
+    
     const { data: post, error } = await executeSupabaseQuery(async () => {
       return await supabase
         .from('posts')
@@ -298,6 +331,7 @@ app.get('/admin/login', async (req, res) => {
     return res.redirect('/admin');
   }
   
+  console.log('📄 Serving admin login');
   const template = await renderTemplate('admin/login.html', {
     title: 'Admin Login - DevLegal'
   });
@@ -364,6 +398,8 @@ app.get('/admin/logout', (req, res) => {
 
 app.get('/admin', requireAuth, async (req, res) => {
   try {
+    console.log('📄 Serving admin dashboard');
+    
     // Get dashboard stats
     const { data: postsCount } = await executeSupabaseQuery(async () => {
       return await supabase
@@ -394,6 +430,8 @@ app.get('/admin', requireAuth, async (req, res) => {
 // Admin posts management
 app.get('/admin/posts', requireAuth, async (req, res) => {
   try {
+    console.log('📄 Serving admin posts');
+    
     const { data: posts, error } = await executeSupabaseQuery(async () => {
       return await supabase
         .from('posts')
@@ -512,6 +550,15 @@ app.post('/admin/upload', requireAuth, upload.single('file'), (req, res) => {
   }
 });
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    supabase: supabaseConfigured ? 'connected' : 'demo mode'
+  });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
@@ -520,11 +567,12 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use((req, res) => {
+  console.log(`404 - Page not found: ${req.url}`);
   res.status(404).send('Page not found');
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📱 Visit: http://localhost:${PORT}`);
   
