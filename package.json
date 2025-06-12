@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "python src/main.py",
     "start": "python src/main.py",
-    "install-deps": "pip install -r requirements.txt",
+    "install-deps": "python3 -m pip install -r requirements.txt",
     "init-db": "python manage.py init-db",
     "create-admin": "python manage.py create-admin"
   },

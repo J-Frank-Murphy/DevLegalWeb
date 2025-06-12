@@ -29,7 +29,7 @@ This application is configured for easy deployment on Render.com.
 3. Activate the virtual environment:
    - Windows: `venv\Scripts\activate`
    - Unix/MacOS: `source venv/bin/activate`
-4. Install dependencies: `pip install -r requirements.txt`
+4. Install dependencies: `python3 -m pip install -r requirements.txt`
 5. Set up environment variables or create a `.env` file
 6. Initialize the database: `python manage.py init-db`
 7. Create an admin user: `python manage.py create-admin`
