@@ -94,7 +94,11 @@ app.engine('html', async (filePath, options, callback) => {
           if (typeof value === 'object') {
             replacementValue = '';
           } else {
-            replacementValue = String(value);
+            try {
+              replacementValue = String(value);
+            } catch (error) {
+              replacementValue = '';
+            }
           }
         }
         html = html.replace(regex, replacementValue);
