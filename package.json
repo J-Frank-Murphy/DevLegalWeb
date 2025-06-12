@@ -1,0 +1,15 @@
+{
+  "name": "dev-legal-website",
+  "version": "1.0.0",
+  "description": "A professional website for a legal practice specializing in technology law",
+  "scripts": {
+    "dev": "python src/main.py",
+    "start": "python src/main.py",
+    "install-deps": "pip install -r requirements.txt",
+    "init-db": "python manage.py init-db",
+    "create-admin": "python manage.py create-admin"
+  },
+  "keywords": ["flask", "legal", "website"],
+  "author": "",
+  "license": "ISC"
+}
