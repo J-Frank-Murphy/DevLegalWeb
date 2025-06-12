@@ -1,38 +1,50 @@
-{% extends "admin/base_layout.html" %}
-
-{% block title %}Admin Login - Dev Legal{% endblock %}
-
-{% block body %}
-<div class="login-container">
-    <div class="login-box">
-        <div class="login-logo">
-            <img src="{{ url_for('static', filename='images/new/logo-horizontal.png') }}" alt="Dev Legal Logo">
-        </div>
-        <h2>Admin Login</h2>
-        
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        
-        <form method="POST" action="{{ url_for('admin.login') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <div class="form-group">
-                <label for="username">Username</label>
-                <input type="text" id="username" name="username" required>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="/static/css/admin.css">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-form">
+            <div class="login-header">
+                <img src="/static/images/new/logo-horizontal.png" alt="DevLegal" height="50">
+                <h1>Admin Login</h1>
             </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
+            
+            <form method="POST" action="/admin/login">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Login</button>
+            </form>
+            
+            <div class="login-footer">
+                <a href="/">← Back to Website</a>
             </div>
-            <button type="submit" class="login-button">Login</button>
-        </form>
-        <div class="back-link">
-            <a href="/">← Back to Website</a>
         </div>
     </div>
-</div>
-{% endblock %}
+
+    <script>
+        // Check for error messages in URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const error = urlParams.get('error');
+        
+        if (error === 'invalid') {
+            alert('Invalid username or password');
+        } else if (error === 'server') {
+            alert('Server error. Please try again.');
+        }
+    </script>
+</body>
+</html>

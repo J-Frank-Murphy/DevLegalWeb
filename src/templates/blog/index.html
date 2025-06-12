@@ -1,192 +1,153 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+</head>
+<body>
+    <header class="header">
+        <nav class="nav">
+            <div class="nav-container">
+                <a href="/" class="nav-logo">
+                    <img src="/static/images/new/logo-horizontal.png" alt="DevLegal" height="40">
+                </a>
+                <ul class="nav-menu">
+                    <li><a href="/" class="nav-link">Home</a></li>
+                    <li><a href="/blog" class="nav-link active">Blog</a></li>
+                    <li><a href="/#services" class="nav-link">Services</a></li>
+                    <li><a href="/#about" class="nav-link">About</a></li>
+                    <li><a href="/#contact" class="nav-link">Contact</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
 
-{% block title %}Dev Legal Blog{% endblock %}
+    <main class="main-content">
+        <div class="container">
+            <header class="page-header">
+                <h1>Legal Insights & Updates</h1>
+                <p>Stay informed about the latest developments in technology law, IP licensing, and digital compliance.</p>
+            </header>
 
-{% block additional_styles %}
-<style>
-    /* Blog-specific styles */
-    .blog-header {
-        background-color: #f5f7fa;
-        padding: 3rem 0;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    
-    .blog-header h1 {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
-        color: #2c3e50;
-    }
-    
-    .blog-header p {
-        font-size: 1.2rem;
-        color: #7f8c8d;
-        max-width: 700px;
-        margin: 0 auto;
-    }
-    
-    /* Keep existing blog post styles for compatibility with flexible component */
-    .blog-posts {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-        gap: 2rem;
-        margin-bottom: 3rem;
-    }
-    
-    .blog-post {
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease;
-        background-color: #fff;
-    }
-    
-    .blog-post:hover {
-        transform: translateY(-5px);
-    }
-    
-    .blog-post-thumbnail img {
-        width: 100%;
-        height: 200px;
-        object-fit: cover;
-    }
-    
-    .blog-post-content {
-        padding: 1.5rem;
-    }
-    
-    .blog-post-meta {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 0.5rem;
-        font-size: 0.9rem;
-        color: #7f8c8d;
-    }
-    
-    .blog-post-title {
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-        color: #2c3e50;
-    }
-    
-    .blog-post-excerpt {
-        color: #34495e;
-        margin-bottom: 1.5rem;
-        line-height: 1.6;
-    }
-    
-    .read-more {
-        display: inline-block;
-        color: #3498db;
-        font-weight: 600;
-        text-decoration: none;
-        transition: color 0.3s ease;
-    }
-    
-    .read-more:hover {
-        color: #2980b9;
-    }
-    
-    /* Pagination styles */
-    .pagination {
-        display: flex;
-        justify-content: center;
-        margin: 2rem 0;
-    }
-    
-    .pagination-prev, .pagination-next {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0.5rem 1rem;
-        border-radius: 4px;
-        background-color: #f5f7fa;
-        color: #2c3e50;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        margin: 0 0.5rem;
-    }
-    
-    .pagination-prev:hover, .pagination-next:hover {
-        background-color: #3498db;
-        color: #fff;
-    }
-    
-    .pagination-num {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: #f5f7fa;
-        color: #2c3e50;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        margin: 0 0.3rem;
-    }
-    
-    .pagination-num:hover {
-        background-color: #3498db;
-        color: #fff;
-    }
-    
-    .pagination-current {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: #3498db;
-        color: #fff;
-        margin: 0 0.3rem;
-    }
-    
-    .pagination-ellipsis {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        color: #7f8c8d;
-        margin: 0 0.3rem;
-    }
-    
-    .disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
-    
-    .no-posts-message {
-        text-align: center;
-        padding: 2rem;
-        color: #7f8c8d;
-        font-size: 1.2rem;
-    }
-</style>
-{% endblock %}
+            <div class="blog-layout">
+                <div class="blog-main">
+                    <div class="posts-container" id="posts-container">
+                        <!-- Posts will be loaded here -->
+                    </div>
+                </div>
 
-{% block content %}
-<!-- Blog Header -->
-<div class="blog-header">
-    <div class="container">
-        <h1>Dev Legal Blog</h1>
-        <p>Insights and updates on technology law, open source software, and legal compliance for tech companies</p>
-    </div>
-</div>
+                <aside class="blog-sidebar">
+                    <div class="sidebar-widget">
+                        <h3>Categories</h3>
+                        <ul class="category-list" id="categories-list">
+                            <!-- Categories will be loaded here -->
+                        </ul>
+                    </div>
 
-<!-- Blog Posts using flexible component -->
-<div class="container">
-    {% with 
-        posts=posts.items,
-        pagination=posts,
-        show_pagination=true,
-        pagination_args={},
-        section_title="",
-        show_view_all=false
-    %}
-        {% include 'includes/flexible_posts_template.html' %}
-    {% endwith %}
-</div>
-{% endblock %}
+                    <div class="sidebar-widget">
+                        <h3>Tags</h3>
+                        <div class="tags-cloud" id="tags-cloud">
+                            <!-- Tags will be loaded here -->
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>DevLegal</h3>
+                    <p>Technology Law Specialists</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Services</h4>
+                    <ul>
+                        <li><a href="/#services">Technology Law</a></li>
+                        <li><a href="/#services">IP Licensing</a></li>
+                        <li><a href="/#services">Open Source Compliance</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Resources</h4>
+                    <ul>
+                        <li><a href="/blog">Blog</a></li>
+                        <li><a href="/#contact">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 DevLegal. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Load posts
+        fetch('/api/posts')
+            .then(response => response.json())
+            .then(posts => {
+                const container = document.getElementById('posts-container');
+                
+                if (posts.length === 0) {
+                    container.innerHTML = '<p class="no-posts">No posts available yet.</p>';
+                    return;
+                }
+                
+                container.innerHTML = posts.map(post => `
+                    <article class="post-preview">
+                        <header class="post-header">
+                            <h2><a href="/blog/post/${post.slug}">${post.title}</a></h2>
+                            <div class="post-meta">
+                                <span class="post-date">${new Date(post.created_at).toLocaleDateString()}</span>
+                                ${post.categories ? `<span class="post-category">${post.categories.name}</span>` : ''}
+                                <span class="post-views">${post.views || 0} views</span>
+                            </div>
+                        </header>
+                        <div class="post-content">
+                            <p>${post.excerpt || ''}</p>
+                        </div>
+                        <footer class="post-footer">
+                            <a href="/blog/post/${post.slug}" class="read-more">Read More</a>
+                        </footer>
+                    </article>
+                `).join('');
+            })
+            .catch(error => {
+                console.error('Error loading posts:', error);
+                document.getElementById('posts-container').innerHTML = '<p class="error">Error loading posts.</p>';
+            });
+
+        // Load categories
+        fetch('/api/categories')
+            .then(response => response.json())
+            .then(categories => {
+                const container = document.getElementById('categories-list');
+                container.innerHTML = categories.map(category => `
+                    <li><a href="/blog/category/${category.slug}">${category.name}</a></li>
+                `).join('');
+            })
+            .catch(error => {
+                console.error('Error loading categories:', error);
+            });
+
+        // Load tags
+        fetch('/api/tags')
+            .then(response => response.json())
+            .then(tags => {
+                const container = document.getElementById('tags-cloud');
+                container.innerHTML = tags.map(tag => `
+                    <a href="/blog/tag/${tag.slug}" class="tag">${tag.name}</a>
+                `).join('');
+            })
+            .catch(error => {
+                console.error('Error loading tags:', error);
+            });
+    </script>
+</body>
+</html>
